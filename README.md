@@ -33,6 +33,7 @@ with a focus on **using the board on Linux**.
 - **[docs/02-linux-setup.md](docs/02-linux-setup.md)** — Practical guide: configuring the board on Linux with usevia.app + udev, and Kanata for advanced remapping. Includes live HID-probe commands.
 - **[docs/03-firmware-and-flashing.md](docs/03-firmware-and-flashing.md)** — The Telink OTA protocol, why QMK/VIA can't be flashed, the ZMK/Zephyr reality for this chip, and the (risky) hardware-flash path.
 - **[docs/04-screen-image-tool.md](docs/04-screen-image-tool.md)** — The Evision "Image Custom Tool" for the color screen: what it is, the ~180×180 panel, and Linux/ZMK implications.
+- **[docs/05-zmk-porting-plan.md](docs/05-zmk-porting-plan.md)** — If you want to pursue ZMK: a GMK104-specific porting checklist + no-case-opening flash-path go/no-go, built from the sibling `rainy75-zmk` port.
 
 ## Verdict on "can it run VIA firmware?"
 

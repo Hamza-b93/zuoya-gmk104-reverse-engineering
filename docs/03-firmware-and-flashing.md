@@ -74,10 +74,13 @@ build-from-source on Linux.
 
 ### Recovery
 
-The normal install is reversible in software, but a *bad* flash is recoverable only over the
-chip's **hardware debug pads** — for TLSR9 that's the **JTAG** route (Telink TLSR9 DEV_KEY /
-burning board + RISC-V OpenOCD; the simple single-wire SWS tooling is TLSR8-only). Keep a
-stock backup before starting.
+The normal install is reversible in software, but a *bad* flash (USB stops enumerating) is
+recoverable only over the chip's **hardware debug pads**. For the B91/TLSR9511 that is the
+**SWS** single-wire interface (pad **PA7**, plus VCC + GND) driven by a **Telink Burning
+EVK** (`TLSRGSOCBK56B`) with Telink's BDT tool — the *only* confirmed B91 SWS programmer
+(the open pvvx/TLSRPGM-style tools are TLSR82xx-only; an FTDI cannot bit-bang B91 SWS). Keep
+a stock backup before starting. Full porting/flashing plan:
+[`05-zmk-porting-plan.md`](05-zmk-porting-plan.md).
 
 ### Restore safety net
 
