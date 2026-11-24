@@ -1,0 +1,10 @@
+# Proprietary vendor binaries — NOT redistributed in this public repo (copyright).
+# Obtain from the manufacturer/retailer (e.g. Zuoya / Mecha downloads).
+*.exe
+
+# Extracted stock firmware blob — Zuoya's proprietary firmware; kept locally only.
+extracted/*.bin
+
+# OS / editor noise
+.vscode/
+.DS_Store
