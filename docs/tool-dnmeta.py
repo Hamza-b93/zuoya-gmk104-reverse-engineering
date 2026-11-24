@@ -88,8 +88,12 @@ def dump_strings(d, streams, which, out):
     print(f"{which}: {len(uniq)} unique -> {out}")
 
 if __name__=='__main__':
+    if len(sys.argv) < 3:
+        print("usage: tool-dnmeta.py <assembly.exe> <tag> [out_dir]")
+        sys.exit(1)
     path=sys.argv[1]; tag=sys.argv[2]
+    out_dir=sys.argv[3] if len(sys.argv) > 3 else "."
     d,streams=parse(path)
     print("Streams:", list(streams.keys()))
-    dump_strings(d,streams,'#Strings', f"{tag}_names.txt")
-    dump_strings(d,streams,'#US', f"{tag}_us.txt")
+    dump_strings(d,streams,'#Strings', f"{out_dir}/{tag}_names.txt")
+    dump_strings(d,streams,'#US', f"{out_dir}/{tag}_us.txt")
