@@ -109,8 +109,10 @@ reports: the suggested tool/firmware path does not apply to this hardware.
 
 These files are what you sideload into VIA/usevia.app's **Design** tab. Their existence
 confirms the stock firmware speaks the VIA protocol (usage page `0xFF60`) — i.e. VIA is
-real for *configuration*. The OLED *content* (GIFs/clock) is not covered by VIA and needs
-Zuoya's separate image tool (not included in this folder).
+real for *configuration*. The screen *content* (GIFs/clock) is not covered by VIA and needs
+Zuoya's separate "Image Custom Tool" — see [`04-screen-image-tool.md`](04-screen-image-tool.md).
+Note the screen is actually a small **color TFT** (~180×180), despite VIA's `OLED` keycode
+naming.
 
 ## 6. Summary of findings
 

@@ -23,6 +23,7 @@ with a focus on **using the board on Linux**.
 | `ZUOYA-GMK104-CS49BE-V0105-20240815.exe` | Vendor firmware **OTA updater**, bundling firmware **V01.05**. |
 | `ZUOYA-GK104-CS9DB8-V0111-20260511.exe` | **Same** OTA updater app, bundling newer firmware **V01.11**. |
 | `qmk_toolbox_beta.exe` | Stock, unmodified community **QMK Toolbox** (the seller's suggested flasher — which does **not** work here). |
+| `Image Custom Tool 0703.exe` | Evision/Acrox Windows tool for uploading **images/GIFs to the keyboard's color screen**. Windows-only; not a firmware/keymap tool. |
 | `docs/` | Full write-up (see below) + the analysis scripts used. |
 | `extracted/` | The **stock firmware blob** carved out of the vendor `.exe` (your only backup). |
 
@@ -31,6 +32,7 @@ with a focus on **using the board on Linux**.
 - **[docs/01-reverse-engineering.md](docs/01-reverse-engineering.md)** — Full methodology and evidence: how the chip was identified, the OTA tool internals, the QMK Toolbox analysis, and the VIA definitions.
 - **[docs/02-linux-setup.md](docs/02-linux-setup.md)** — Practical guide: configuring the board on Linux with usevia.app + udev, and Kanata for advanced remapping. Includes live HID-probe commands.
 - **[docs/03-firmware-and-flashing.md](docs/03-firmware-and-flashing.md)** — The Telink OTA protocol, why QMK/VIA can't be flashed, the ZMK/Zephyr reality for this chip, and the (risky) hardware-flash path.
+- **[docs/04-screen-image-tool.md](docs/04-screen-image-tool.md)** — The Evision "Image Custom Tool" for the color screen: what it is, the ~180×180 panel, and Linux/ZMK implications.
 
 ## Verdict on "can it run VIA firmware?"
 
@@ -40,7 +42,7 @@ Two different claims hide under "VIA support":
 |---|---|---|
 | Configure keys/RGB/macros with VIA | ✅ **Yes** (wired, via sideloaded JSON) | Stock firmware answers the VIA HID protocol (usage page `0xFF60`). |
 | Flash real **QMK/VIA firmware** onto it | ❌ **No** | Chip is **Telink TLSR9511B**; QMK has no Telink target; QMK Toolbox has no Telink bootloader; vendor OTA rejects foreign images. |
-| Flash **ZMK** (open-source) onto it | ⚠️ **Theoretically**, not practically | It *is* RISC-V (TLSR9 family, which Zephyr supports), but there is no ZMK board for it; it needs a months-long custom port + hardware debug flashing. |
+| Flash **ZMK** (open-source) onto it | ⚠️ **Feasible, but a project** | A working ZMK + open-BLE port exists for the **same TLSR9511/B91 chip** ([`scholzri/rainy75-zmk`](https://github.com/scholzri/rainy75-zmk)) with a no-case-opening install path. The GMK104 still needs its own **board port** (GPIO matrix/RGB probing), loses 2.4 GHz and the screen, and carries brick risk. See [docs/03](docs/03-firmware-and-flashing.md). |
 
 ---
 

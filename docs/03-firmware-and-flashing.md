@@ -39,23 +39,45 @@ Telink**. A TLSR9 chip exposes none of these over USB, so QMK Toolbox simply can
 keyboard. If a seller says "flash VIA firmware with QMK Toolbox," that instruction does not
 apply to this hardware.
 
-## ZMK (the only open-source angle) — theoretical
+## ZMK (the only open-source angle) — feasible, as a port
 
-Because the chip is **RISC-V TLSR9**, it's in the family that *Zephyr* supports — unlike
-the dead-end TLSR8. But:
+Because the chip is **RISC-V TLSR9511 (B91)**, there is now a real reference:
+**[`scholzri/rainy75-zmk`](https://github.com/scholzri/rainy75-zmk)** — a hardware-verified
+open **ZMK port for the exact same TLSR9511/B91 platform** (the Wobkey Rainy 75 Pro, also an
+"Evision" board with the same `320F:5055` stock USB ID). A second keyboard has already been
+ported from it ([`dwaris/crush80-zmk`](https://github.com/dwaris/crush80-zmk)). The generic,
+hard parts are therefore **done**:
 
-- Zephyr's supported board is the **TLSR9518 (B91)** dev kit, **not** the **9511B**. Same
-  `TLSR951x` series, different variant → it would need its own SoC/board definition.
-- **ZMK has no Telink board** at all (ZMK officially covers nRF52, RP2040/RP2350, STM32,
-  SAMD21). Everything else is "may work with custom configuration."
-- A real port would mean bringing up: RISC-V board def, the Telink BLE controller, the
-  2.4 GHz dongle link, the RGB matrix, and the OLED. **Months of work**, for one board.
+- A working B91 Zephyr + ZMK base, plus a **blob-free open BLE controller**.
+- B91 drivers: USB, SPI WS2812 RGB, battery ADC.
+- A **no-case-opening install path**: a two-stage **OTA → mcumgr DFU** flow
+  (`./install_zmk.sh`) that flashes ZMK *through the stock updater's own protocol*, plus
+  `./restore_stock.sh` to revert. No hardware debugger needed for the normal path.
 
-### And you'd have to flash it over hardware debug, not USB
+### What's still GMK104-specific
 
-The vendor OTA won't take foreign images. A ZMK/custom image would go in over the chip's
-**single-wire debug interface (SWS)** using a Telink burning EVK / compatible flasher and
-RISC-V OpenOCD — which means **opening the case** and soldering/probing. Brick risk is real.
+- **Its own ZMK board port**: the GMK104's GPIO matrix (which pins = rows/cols), RGB data
+  pin, and layout. The *logical* matrix (8×15) and keymap come from the VIA JSON here
+  (convertible with rainy75's `reverse/tools/via_dump_keymap.py`); the *physical pin* mapping
+  does not — it needs hardware probing or firmware RE.
+- **Confirm the DFU foothold** on the GMK104. Its updater is the "YKQ/USB_OTA" skin, not
+  Wobkey's; the mcuboot/OTA entry path must be verified before trusting the software-only
+  install.
+- **The color screen** has no ZMK driver anywhere — out of scope for a first bring-up
+  (see [`04-screen-image-tool.md`](04-screen-image-tool.md)).
+
+### Trade-offs (same as rainy75)
+
+USB + **Bluetooth LE only** (the proprietary **2.4 GHz dongle is not ported**), **no VIA**
+(remap via **ZMK Studio**), **no screen**, 6-key rollover by default (NKRO optional), and
+build-from-source on Linux.
+
+### Recovery
+
+The normal install is reversible in software, but a *bad* flash is recoverable only over the
+chip's **hardware debug pads** — for TLSR9 that's the **JTAG** route (Telink TLSR9 DEV_KEY /
+burning board + RISC-V OpenOCD; the simple single-wire SWS tooling is TLSR8-only). Keep a
+stock backup before starting.
 
 ### Restore safety net
 
