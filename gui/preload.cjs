@@ -14,4 +14,10 @@ contextBridge.exposeInMainWorld('zuoya', {
   keymapLayout: () => ipcRenderer.invoke('keymap:layout'),
   keymapRead: () => ipcRenderer.invoke('keymap:read'),
   keymapWriteKey: (edit) => ipcRenderer.invoke('keymap:writeKey', edit),
+  // Live screen widgets
+  widgetsList: () => ipcRenderer.invoke('widgets:list'),
+  widgetsPreview: (id) => ipcRenderer.invoke('widgets:preview', { id }),
+  widgetsStatus: () => ipcRenderer.invoke('widgets:status'),
+  widgetsStart: (id) => ipcRenderer.invoke('widgets:start', { id }),
+  widgetsStop: () => ipcRenderer.invoke('widgets:stop'),
 });

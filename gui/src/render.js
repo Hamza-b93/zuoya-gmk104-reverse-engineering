@@ -36,6 +36,12 @@ export async function renderSvg(svg) {
   return data;
 }
 
+// Rasterize a full SVG document to a PNG data URL (for in-GUI previews).
+export async function svgToPngDataUrl(svg) {
+  const png = await sharp(Buffer.from(svg)).resize(S, S, { fit: 'cover' }).flatten({ background: '#000000' }).png().toBuffer();
+  return `data:image/png;base64,${png.toString('base64')}`;
+}
+
 function text(x, y, s, { size = 20, fill = '#e6ecf5', weight = 400, anchor = 'middle', family = 'sans-serif' } = {}) {
   return (
     `<text x="${x}" y="${y}" font-family="${family}" font-size="${size}" font-weight="${weight}" ` +
@@ -58,9 +64,32 @@ export function gameStatsSvg({ title = '', kills = 0, deaths = 0, assists = 0, s
 // A simple clock widget (host clock; the panel has no RTC).
 export function clockSvg({ time = '', date = '', accent = '#5b9dff' } = {}) {
   return (
-    text(S / 2, 96, time, { size: 52, weight: 700, fill: '#e6ecf5' }) +
+    text(S / 2, 96, time, { size: 46, weight: 700, fill: '#e6ecf5' }) +
     (date ? text(S / 2, 132, date, { size: 16, fill: accent }) : '')
   );
+}
+
+// A labeled stat list with little bar meters. rows: [{ label, value, pct? }].
+// `pct` (0..100) draws a meter under the row; omit it for plain value rows.
+export function statsSvg({ title = '', rows = [], accent = '#5b9dff' } = {}) {
+  let svg =
+    `<rect x="0" y="0" width="${S}" height="30" fill="${accent}"/>` +
+    text(S / 2, 21, title, { size: 15, weight: 700, fill: '#0b0f17' });
+  const top = 48;
+  const rowH = Math.min(34, (S - top - 8) / Math.max(rows.length, 1));
+  rows.forEach((r, i) => {
+    const y = top + i * rowH;
+    svg += text(10, y, r.label, { size: 13, fill: '#8a97ab', anchor: 'start' });
+    svg += text(S - 10, y, String(r.value), { size: 15, weight: 700, fill: '#e6ecf5', anchor: 'end' });
+    if (typeof r.pct === 'number') {
+      const w = S - 20;
+      const p = Math.max(0, Math.min(100, r.pct)) / 100;
+      svg +=
+        `<rect x="10" y="${y + 6}" width="${w}" height="5" rx="2.5" fill="#1b2433"/>` +
+        `<rect x="10" y="${y + 6}" width="${(w * p).toFixed(1)}" height="5" rx="2.5" fill="${accent}"/>`;
+    }
+  });
+  return svg;
 }
 
 // Convenience: render a game-stats frame straight to RGB888.

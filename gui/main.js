@@ -14,6 +14,8 @@ import { keycodeName, KEYCODE_GROUPS } from './src/keycodes.js';
 import { buildLayout, keyOffset } from './src/layout.js';
 import { loadImage, previewDataUrl } from './src/image.js';
 import { uploadImage } from './src/screen-device.js';
+import { listWidgets, widgetPreview } from './src/widgets.js';
+import { WidgetRunner } from './src/widget-runner.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -135,12 +137,22 @@ handle('keymap:writeKey', ({ layer, row, col, code }) => {
   });
 });
 
+// --- Screen widgets (live content) ---
+const widgetRunner = new WidgetRunner();
+handle('widgets:list', () => listWidgets());
+handle('widgets:preview', ({ id }) => widgetPreview(id));
+handle('widgets:status', () => widgetRunner.status);
+handle('widgets:start', ({ id }) => widgetRunner.start(id));
+handle('widgets:stop', () => widgetRunner.stop());
+
 app.whenReady().then(() => {
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
+
+app.on('before-quit', () => widgetRunner.stop());
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

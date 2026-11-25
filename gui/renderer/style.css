@@ -109,6 +109,23 @@ button:disabled { opacity: 0.55; cursor: progress; }
 .drop-hint strong { color: var(--text); }
 .drop-hint em { color: var(--accent); font-style: normal; }
 
+/* ---------- screen widgets ---------- */
+.widget-grid { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; }
+.widget-tile {
+  width: 150px; border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; background: var(--panel-2);
+}
+.widget-tile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.widget-preview {
+  width: 150px; height: 150px; background: #000;
+  display: flex; align-items: center; justify-content: center;
+}
+.widget-preview img { width: 150px; height: 150px; image-rendering: pixelated; display: block; }
+.widget-preview span { color: var(--muted); font-size: 28px; }
+.widget-meta { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; gap: 8px; }
+.widget-name { font-size: 13px; font-weight: 600; }
+.widget-start { padding: 5px 12px; font-size: 12px; }
+
 /* ---------- tabs / views ---------- */
 .tabs { display: flex; gap: 6px; margin-top: 22px; border-bottom: 1px solid var(--border); }
 .tab {

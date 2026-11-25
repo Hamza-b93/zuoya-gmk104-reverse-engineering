@@ -15,6 +15,7 @@
     <nav class="tabs">
       <button class="tab active" data-view="device">Device &amp; Screen</button>
       <button class="tab" data-view="keymap">Keymap</button>
+      <button class="tab" data-view="widgets">Screen widgets</button>
     </nav>
 
     <main>
@@ -86,6 +87,18 @@
             <span id="raw-hint" class="muted">any 16-bit VIA code, e.g. <code>0x5201</code> = MO(1)</span>
           </div>
           <div id="picker" class="picker"></div>
+        </section>
+      </div>
+
+      <!-- ============ SCREEN WIDGETS ============ -->
+      <div id="view-widgets" class="view">
+        <section class="card">
+          <div class="card-head">
+            <h2>Screen widgets</h2>
+            <button id="btn-widget-stop" class="ghost" disabled>Stop</button>
+          </div>
+          <div id="widget-status" class="status">Live content streamed to the 180×180 panel. Start one and leave it running.</div>
+          <div id="widget-grid" class="widget-grid"></div>
         </section>
       </div>
     </main>

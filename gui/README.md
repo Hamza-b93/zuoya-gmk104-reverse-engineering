@@ -36,6 +36,7 @@ app registry-driven so it supports boards beyond the GMK104 (see "Next" at the b
 | Diagnostics dump (`doctor.js`) + keyboard registry (`src/registry.js`) | ✅ `npm run doctor` writes a redacted report for issue-based board support. |
 | Packaging (AppImage / Snap / Flatpak) | ✅ electron-builder config + CI release workflow. AppImage build verified; Snap/Flatpak via CI. |
 | Live game stats on the screen (Dota 2) | ✅ pipeline built + offline-verified (GSI listen → parse → render → codec frame). Device streaming not yet run on hardware. `npm run game`. |
+| Screen widgets (clock, system monitor, rotation) | ✅ GUI tab + `npm run widgets`; live previews, start/stop/rotate. Streams host data to the panel. Device streaming not yet run on hardware. |
 | Styling: hand-rolled CSS for now; Tailwind build step | ⬜ not wired (CSS in `renderer/style.css`) |
 | udev rule (`linux/92-zuoya-via.rules`) | ⚠️ installed to `/etc/udev/rules.d/`, but its `uaccess` ACL was not applied on the test machine. The screen node was opened with `chgrp wheel` + `chmod 0660` instead. |
 
@@ -57,9 +58,12 @@ gui/
 │   ├── screen-stream.js # stream frames for live content (keeps handle open, latest-wins)
 │   ├── render.js     # compose a 180x180 RGB888 frame from a scene (SVG -> sharp)
 │   ├── image.js      # decode any image file -> 180x180 RGB888 (sharp)
+│   ├── widgets.js    # screen widgets (clock, system monitor): render host data to a frame
+│   ├── widget-runner.js # drive widgets onto the panel (interval + rotation) via ScreenStream
 │   └── providers/
 │       └── dota2.js  # Dota 2 Game State Integration listener + parser (+ config generator)
 ├── game-screen.js    # CLI: live game stats on the screen (npm run game) — Dota 2 today
+├── screen-widgets.js # CLI: run a screen widget / rotation (npm run widgets)
 ├── doctor.js         # read-only diagnostic dump of HID keyboards (npm run doctor)
 ├── upload-image.js   # CLI: upload an image file to the screen (npm run upload)
 ├── write-key.js      # CLI: read/write one keymap cell with read-back (npm run write-key)
@@ -78,7 +82,7 @@ npm install
 npm start        # launches the Electron window
 ```
 
-Two tabs:
+Three tabs:
 - **Device & Screen** — **Detect** (lists the hidraw interfaces by usage page) and a **Screen**
   uploader: drag an image onto the card (or **Choose image…**), see a 180×180 preview of exactly
   what the panel will show (updates live with the **Fit** toggle: cover/crop or contain/letterbox),
@@ -86,6 +90,9 @@ Two tabs:
 - **Keymap** — renders the full board from the VIA JSON, one layer at a time. **Read from keyboard**
   pulls every layer's keycodes; click a key, pick a new keycode, and it's written over VIA
   (`set_buffer`) and read back to confirm.
+- **Screen widgets** — live content for the panel: a clock, a system monitor (CPU/RAM/temp/uptime),
+  and a rotate-all mode. Each tile shows a live preview; **Start** streams it to the screen until you
+  **Stop**. Same widgets are available headless via `npm run widgets`.
 
 Each action calls the same verified device layer the CLIs use, over the `preload.cjs` bridge. It needs
 the same hidraw access as the probe below (udev rule or the `chgrp` fallback).
@@ -132,12 +139,27 @@ Any format sharp reads (PNG/JPG/WebP/GIF/…) is decoded, resized to 180×180 an
 letterboxes with `--bg`. GIFs upload their first frame (animation is not wired up yet). Close the
 Windows tool / Wine first — it holds the hidraw handle.
 
-## Live game stats on the screen (Dota 2)
+## Live content on the screen
 
 The screen is a dumb 180×180 panel — it shows whatever frame the host pushes. "Dynamic" content
 means the app renders a fresh frame when the data changes and streams it. A full frame is ~1177 HID
 reports (~1 report/ms over USB), so expect ~1–1.5 s per frame: ideal for slow-changing data like a
-scoreboard, not for video.
+clock, a scoreboard, or a system monitor — not for video.
+
+### Widgets (clock / system monitor)
+
+```bash
+npm run widgets            # list widgets
+npm run widgets clock      # stream the clock
+npm run widgets sysmon     # CPU / RAM / temp / uptime
+npm run widgets rotate     # cycle through all widgets
+```
+
+Or use the **Screen widgets** tab in the app (live previews + start/stop). Widgets live in
+`src/widgets.js`; `src/widget-runner.js` drives them onto the panel. A new widget is just another
+entry that returns a 180×180 scene.
+
+### Game stats (Dota 2)
 
 **Dota 2** is wired up via Valve's Game State Integration (GSI): Dota POSTs live match state to a
 local HTTP endpoint we run, and we render K/D/A (+ hero, net worth) to the screen.

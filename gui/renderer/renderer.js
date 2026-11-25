@@ -25,6 +25,7 @@ document.querySelectorAll('.tab').forEach((tab) =>
     const view = tab.dataset.view;
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${view}`));
     if (view === 'keymap') ensureLayout();
+    if (view === 'widgets') ensureWidgets();
   }),
 );
 
@@ -296,3 +297,74 @@ $('btn-keymap-read').addEventListener('click', () =>
     setStatus($('keymap-status'), `Read ${state.layerCount} layers. Click a key to reassign it.`, 'ok');
   }),
 );
+
+// ---------- Screen widgets ----------
+const widgets = { loaded: false, active: null };
+
+async function ensureWidgets() {
+  if (widgets.loaded) return reflectWidgetStatus();
+  const res = await window.zuoya.widgetsList();
+  if (!res.ok) return setStatus($('widget-status'), res.error, 'err');
+  const grid = $('widget-grid');
+  grid.innerHTML = '';
+  // The built-in widgets, plus a "rotate" tile.
+  const tiles = [...res.data, { id: 'rotate', name: 'Rotate all' }];
+  for (const w of tiles) {
+    const card = document.createElement('div');
+    card.className = 'widget-tile';
+    card.dataset.id = w.id;
+    card.innerHTML =
+      `<div class="widget-preview"><img alt="" hidden /><span class="muted">${w.id === 'rotate' ? '↻' : '…'}</span></div>` +
+      `<div class="widget-meta"><span class="widget-name">${w.name}</span>` +
+      `<button class="widget-start" data-id="${w.id}">Start</button></div>`;
+    card.querySelector('.widget-start').addEventListener('click', () => startWidget(w.id));
+    grid.appendChild(card);
+    if (w.id !== 'rotate') loadWidgetThumb(w.id, card.querySelector('img'), card.querySelector('.widget-preview span'));
+  }
+  widgets.loaded = true;
+  reflectWidgetStatus();
+}
+
+async function loadWidgetThumb(id, img, placeholder) {
+  const res = await window.zuoya.widgetsPreview(id);
+  if (!res.ok) return;
+  img.src = res.data;
+  img.hidden = false;
+  if (placeholder) placeholder.hidden = true;
+}
+
+async function startWidget(id) {
+  const res = await window.zuoya.widgetsStart(id);
+  if (!res.ok) return setStatus($('widget-status'), res.error, 'err');
+  widgets.active = res.data.active;
+  reflectWidgetStatus(res.data);
+}
+
+$('btn-widget-stop').addEventListener('click', async () => {
+  const res = await window.zuoya.widgetsStop();
+  if (!res.ok) return setStatus($('widget-status'), res.error, 'err');
+  widgets.active = null;
+  reflectWidgetStatus(res.data);
+});
+
+async function reflectWidgetStatus(status) {
+  if (!status) {
+    const res = await window.zuoya.widgetsStatus();
+    if (!res.ok) return;
+    status = res.data;
+  }
+  widgets.active = status.active;
+  $('btn-widget-stop').disabled = !status.running;
+  document.querySelectorAll('.widget-tile').forEach((t) => {
+    const isActive = status.running && (status.rotate ? t.dataset.id === 'rotate' : t.dataset.id === status.active);
+    t.classList.toggle('active', isActive);
+    const btn = t.querySelector('.widget-start');
+    btn.textContent = isActive ? 'Running' : 'Start';
+    btn.disabled = isActive;
+  });
+  if (status.running) {
+    setStatus($('widget-status'), status.rotate ? `Rotating widgets (now: ${status.active}).` : `Streaming “${status.active}” to the screen.`, 'ok');
+  } else {
+    setStatus($('widget-status'), 'Live content streamed to the 180×180 panel. Start one and leave it running.');
+  }
+}
