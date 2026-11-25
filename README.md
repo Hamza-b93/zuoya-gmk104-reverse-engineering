@@ -54,4 +54,49 @@ Two different claims hide under "VIA support":
 
 ---
 
-*Last updated: 2026-11-25. Screen upload protocol fully reverse-engineered (180×180 RGB565-BE). See `docs/` for evidence and reproduction steps.*
+## Upstream: the `rainy75-zmk` reference port
+
+The entire ZMK angle (Track B) rests on **[`scholzri/rainy75-zmk`](https://github.com/scholzri/rainy75-zmk)**
+— a hardware-verified open ZMK port for the Wobkey Rainy 75 Pro, which is built on the **same
+Evision / Telink TLSR9511 (B91) platform** as the GMK104 (shared stock USB ID `320F:5055`, the same
+"YKQ" OTA updater). It does the hard, platform-generic work so our board only has to resolve its
+own physical layout. Full credit to its author for reverse-engineering the platform and publishing
+an open port; a second board ([`dwaris/crush80-zmk`](https://github.com/dwaris/crush80-zmk)) was
+already derived from it.
+
+**What the GMK104 inherits from it (the generic hard parts — done):**
+
+- A working **B91 Zephyr SoC** base + a **blob-free open BLE controller** (no proprietary Telink blob).
+- B91 drivers: **USB** device, **SPI WS2812 RGB**, **battery ADC**.
+- A **no-case-opening install path**: a two-stage **stock-OTA → MCUboot/mcumgr DFU** flow, plus a
+  `restore_stock.sh` revert — so ZMK is flashed *through the stock updater's own protocol*.
+- A documented **reference pinout** for the Evision TLSR9511 design (likely shared with us).
+- Tooling: `via_dump_keymap.py` (VIA JSON → ZMK keymap), `extract_stock_firmware.py`, the OTA
+  flasher, and `boot_diag` / `rainy75_rgb.py` for probing GPIOs and LEDs.
+
+### What's needed from that repo to actually flash the GMK104
+
+You can't build or flash from this repo's draft board alone — it depends on rainy75-zmk's out-of-tree
+code and tooling. Concretely, from `scholzri/rainy75-zmk` you need:
+
+1. **The whole repo as a west workspace.** Our board
+   ([`zmk-port/boards/zuoya_gmk104/`](zmk-port/boards/zuoya_gmk104/)) must be built *inside a fork of
+   rainy75-zmk*, because it relies on that repo's B91 drivers, the open BLE controller, the Telink
+   HAL + patches, `matrix_transform.h`, `physical_layouts.dtsi`, and the `telink,b91-*` bindings.
+2. **Its build setup** — `docs/zmk-firmware.md`: the pinned **Zephyr SDK 0.17.0 (exactly)**, `west`,
+   `hal_telink`, and MCUboot via its manifest, built in an **Arch distrobox**. Plus the `mcumgr` CLI.
+3. **The flash/install tooling** in `reverse/tools/` — the **OTA flasher** (`ota_flasher.py`, incl.
+   the read-only `--version` probe), `install_zmk.sh` (bridge → combined MCUboot+ZMK image),
+   `rainy75_dfu.py` (mcumgr DFU), and `restore_stock.sh` (revert to our stock backup).
+4. **Its install + recovery docs** — `INSTALL.md` (the bridge → MCUboot → DFU sequence) and
+   `docs/recovery.md` (the **SWS / PA7** hardware-recovery path with a Telink Burning EVK, the only
+   confirmed B91 programmer — your brick insurance).
+5. **The probing tools** (`boot_diag`-style GPIO readout, `rainy75_rgb.py`) to settle the GMK104's
+   two remaining hardware unknowns — the "likely" column GPIOs and the exact RGB LED count/order.
+
+See [docs/05-zmk-porting-plan.md](docs/05-zmk-porting-plan.md) for the step-by-step port/flash plan
+and [docs/03-firmware-and-flashing.md](docs/03-firmware-and-flashing.md) for the OTA/recovery detail.
+
+---
+
+*Last updated: 2026-11-26. Added the `rainy75-zmk` upstream section (credit + what's needed to flash). Screen upload protocol fully reverse-engineered (180×180 RGB565-BE). See `docs/` for evidence and reproduction steps.*
