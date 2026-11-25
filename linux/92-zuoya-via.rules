@@ -1,0 +1,6 @@
+# ZUOYA GMK104 (Evision / Telink TLSR9511, VID 0x320F) — allow non-root access to
+# the HID interfaces so usevia.app (WebHID) and HID tools work without sudo.
+# Install: sudo cp linux/92-zuoya-via.rules /etc/udev/rules.d/
+#          sudo udevadm control --reload-rules && sudo udevadm trigger
+KERNEL=="hidraw*", ATTRS{idVendor}=="320f", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="320f", MODE="0660", TAG+="uaccess"

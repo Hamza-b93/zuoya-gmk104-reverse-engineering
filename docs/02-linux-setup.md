@@ -20,21 +20,15 @@ VIA uses **WebHID**, so you need a Chromium-based browser (Chrome/Chromium/Edge/
 
 ### 1a. udev rule (so the browser can open the device without root)
 
-Create `/etc/udev/rules.d/92-zuoya-via.rules`:
-
-```
-# ZUOYA GMK104 (Telink TLSR9511B) — allow user access to its HID interfaces
-KERNEL=="hidraw*", ATTRS{idVendor}=="320f", MODE="0660", TAG+="uaccess"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="320f", MODE="0660", TAG+="uaccess"
-```
-
-Reload:
+A ready-made rule ships in [`../linux/92-zuoya-via.rules`](../linux/92-zuoya-via.rules):
 
 ```bash
+sudo cp linux/92-zuoya-via.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
 
-Unplug/replug the keyboard afterwards.
+Unplug/replug the keyboard afterwards. (The rule just grants your user access to the
+`0x320F` HID interfaces — confirmed present in [06-hardware-probe.md](06-hardware-probe.md).)
 
 ### 1b. Load the definition and configure
 

@@ -27,6 +27,7 @@ with a focus on **using the board on Linux**.
 | `docs/` | Full write-up (see below) + the analysis scripts used. |
 | `extracted/` | The **stock firmware blob** carved out of the vendor `.exe` (your only backup). |
 | `zmk-port/` | **Draft** ZMK board scaffold for the GMK104 (not yet flashed) — see [zmk-port/README.md](zmk-port/README.md). |
+| `linux/` | Host-side helpers — `92-zuoya-via.rules` udev rule for usevia.app without root. |
 
 ## Documentation
 
@@ -35,6 +36,7 @@ with a focus on **using the board on Linux**.
 - **[docs/03-firmware-and-flashing.md](docs/03-firmware-and-flashing.md)** — The Telink OTA protocol, why QMK/VIA can't be flashed, the ZMK/Zephyr reality for this chip, and the (risky) hardware-flash path.
 - **[docs/04-screen-image-tool.md](docs/04-screen-image-tool.md)** — The Evision "Image Custom Tool" for the color screen: what it is, the ~180×180 panel, and Linux/ZMK implications.
 - **[docs/05-zmk-porting-plan.md](docs/05-zmk-porting-plan.md)** — If you want to pursue ZMK: a GMK104-specific porting checklist + no-case-opening flash-path go/no-go, built from the sibling `rainy75-zmk` port.
+- **[docs/06-hardware-probe.md](docs/06-hardware-probe.md)** — Read-only USB/HID probe of a real unit: the 4-interface map confirming VIA (`0xFF60`), the OTA channel (`0xFFEF`), NKRO, and a 4th `0xFF1C` vendor channel.
 
 ## Verdict on "can it run VIA firmware?"
 
