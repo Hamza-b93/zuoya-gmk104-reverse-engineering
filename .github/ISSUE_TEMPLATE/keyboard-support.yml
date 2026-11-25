@@ -1,0 +1,56 @@
+name: "Keyboard support request"
+description: "Ask for support for a keyboard this app doesn't know yet, or report a device-detection problem."
+title: "[board] <manufacturer / model>"
+labels: ["board-support"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping widen hardware support! The app is built around the ZUOYA GMK104
+        but keys everything off HID usage pages, so other VIA keyboards on a similar stack
+        can often be added with no code changes — we just need to see what your board exposes.
+
+        **Run the diagnostic first** (no flashing, no key remapping, read-only):
+
+        ```bash
+        cd gui
+        npm install
+        npm run doctor        # writes zuoya-doctor-report.md
+        ```
+
+        Then paste the contents of `zuoya-doctor-report.md` below. It contains only your
+        board's HID interfaces and report descriptors — no serial numbers, no personal data.
+  - type: input
+    id: keyboard
+    attributes:
+      label: "Keyboard (brand + model)"
+      placeholder: "e.g. Rainy75, Womier SK71, ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: want
+    attributes:
+      label: "What do you want to control?"
+      multiple: true
+      options:
+        - "Key remapping (VIA)"
+        - "Color screen / display"
+        - "RGB lighting"
+        - "Just want it detected"
+    validations:
+      required: true
+  - type: textarea
+    id: dump
+    attributes:
+      label: "Diagnostic dump"
+      description: "Paste the full contents of zuoya-doctor-report.md here."
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: "Anything else?"
+      description: "Wired vs wireless, OS, what works in the stock/Windows tool, etc."
+    validations:
+      required: false

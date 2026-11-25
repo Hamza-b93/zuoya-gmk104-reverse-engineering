@@ -16,13 +16,27 @@ import { loadImage } from './src/image.js';
 import { uploadImage } from './src/screen-device.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const VIA_DEF_PATH = join(__dirname, '..', 'ZUOYA-GMK104-USB.json');
+
+// The VIA definition lives at the repo root in dev, and is bundled as an
+// extraResource when packaged. Try both.
+function viaDefPath() {
+  const candidates = [
+    join(__dirname, '..', 'ZUOYA-GMK104-USB.json'), // dev: repo root
+    join(process.resourcesPath ?? '', 'ZUOYA-GMK104-USB.json'), // packaged
+  ];
+  for (const p of candidates) {
+    try {
+      if (readFileSync(p)) return p;
+    } catch { /* try next */ }
+  }
+  throw new Error('ZUOYA-GMK104-USB.json not found (dev root or packaged resources)');
+}
 
 // Parse the VIA definition once; it never changes at runtime.
 let layoutCache;
 function getLayout() {
   if (!layoutCache) {
-    layoutCache = buildLayout(JSON.parse(readFileSync(VIA_DEF_PATH, 'utf8')));
+    layoutCache = buildLayout(JSON.parse(readFileSync(viaDefPath(), 'utf8')));
   }
   return layoutCache;
 }

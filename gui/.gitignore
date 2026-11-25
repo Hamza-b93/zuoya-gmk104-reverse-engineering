@@ -1,1 +1,4 @@
 node_modules/
+dist/
+zuoya-doctor-report.md
+zuoya-doctor-report.json

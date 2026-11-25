@@ -60,8 +60,12 @@ Tauri was the original recommendation here; it was not chosen. GTK4/libadwaita w
   a replug (persisted to flash, not just RAM).
 - **A3 — screen tool**: ✅ device write + orientation verified; ✅ image import/decode done
   (`src/image.js`, `upload-image.js` CLI + in-app upload). Still: GIF animation and a preview canvas.
-- **A4 — RGB + polish + packaging**: RGB scope decided (global effect/brightness/speed/color only).
-  Profiles and AppImage/Flatpak are not started.
+- **A4 — RGB + polish + packaging**: RGB scope decided (global effect/brightness/speed/color only,
+  not yet wired in the UI). ✅ Packaging set up — electron-builder (AppImage verified; Snap/Flatpak
+  via CI on a `v*` tag). Profiles not started.
+- **A5 — widen hardware support**: ✅ started. Device registry (`gui/src/registry.js`) + a read-only
+  diagnostics dump (`gui/doctor.js`) + a GitHub issue form so owners of other VIA keyboards can
+  request support. Keymap generalizes by usage page; the screen tool needs per-board confirmation.
 
 ---
 

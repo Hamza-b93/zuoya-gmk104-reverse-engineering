@@ -1,0 +1,53 @@
+name: Release (Linux packages)
+
+# Build AppImage, Snap and Flatpak when a version tag is pushed (e.g. v0.1.0),
+# and attach them to the GitHub Release. Can also be run manually.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gui
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Snap + Flatpak build tooling (AppImage needs none of this).
+      - name: Install packaging tooling
+        run: |
+          sudo snap install snapcraft --classic || true
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08 || true
+
+      - name: Install deps
+        run: npm ci || npm install
+
+      # AppImage is the reliable one; snap/flatpak are best-effort and won't fail the job.
+      - name: Build AppImage
+        run: npm run dist
+
+      - name: Build Snap + Flatpak (best effort)
+        run: npx electron-builder --linux snap flatpak || echo "snap/flatpak build skipped or failed — see log"
+
+      - name: Upload artifacts to the release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            gui/dist/*.AppImage
+            gui/dist/*.snap
+            gui/dist/*.flatpak
+          fail_on_unmatched_files: false

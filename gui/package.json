@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "description": "Linux GUI to configure the ZUOYA GMK104 keyboard + screen over hidraw (no flashing).",
+  "author": "ZUOYA GMK104 reverse-engineering project",
+  "license": "MIT",
   "type": "module",
   "main": "main.js",
   "scripts": {
@@ -10,15 +12,57 @@
     "handshake": "node test-handshake.js",
     "upload": "node upload-image.js",
     "write-key": "node write-key.js",
+    "doctor": "node doctor.js",
     "test:screen": "node --test test-screen-codec.js",
     "test:image": "node --test test-image.js",
-    "test:layout": "node --test test-layout.js"
+    "test:layout": "node --test test-layout.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --linux AppImage",
+    "dist:all": "electron-builder --linux AppImage snap flatpak"
   },
   "dependencies": {
     "node-hid": "^3.1.2",
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "electron": "^45.5.0"
+    "electron": "^45.5.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "org.zuoya.control",
+    "productName": "ZUOYA Control",
+    "artifactName": "zuoya-control-${version}-${arch}.${ext}",
+    "files": [
+      "main.js",
+      "preload.cjs",
+      "renderer/**",
+      "src/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../ZUOYA-GMK104-USB.json",
+        "to": "ZUOYA-GMK104-USB.json"
+      }
+    ],
+    "extraMetadata": {
+      "main": "main.js"
+    },
+    "asarUnpack": [
+      "**/*.node",
+      "node_modules/sharp/**",
+      "node_modules/@img/**"
+    ],
+    "linux": {
+      "category": "Utility",
+      "icon": "build/icon.png",
+      "target": ["AppImage", "snap", "flatpak"],
+      "desktopName": "zuoya-control",
+      "synopsis": "Configure ZUOYA GMK104 (and similar VIA keyboards) over hidraw — no flashing.",
+      "maintainer": "ZUOYA GMK104 reverse-engineering project"
+    },
+    "syncDesktopName": true,
+    "appImage": {
+      "artifactName": "zuoya-control-${version}-${arch}.${ext}"
+    }
   }
 }
