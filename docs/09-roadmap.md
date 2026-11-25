@@ -55,8 +55,9 @@ Tauri was the original recommendation here; it was not chosen. GTK4/libadwaita w
 - **A1.5 — Electron shell**: ✅ done. Window + secure IPC bridge (`main.js`/`preload.cjs`/`renderer/`)
   surfacing detect-device, read-keymap and upload-image. Boots and talks to the device layer.
 - **A2 — keymap editor**: ✅ UI built — full board rendered from the VIA KLE layout (`src/layout.js`),
-  per-layer, click-to-pick keycode, write via `set_buffer` with read-back confirm. Write path not
-  yet exercised on hardware.
+  per-layer, click-to-pick keycode, write via `set_buffer` with read-back confirm. Write path
+  **verified on hardware** (single-cell Esc→Z→Esc round trip). Remaining: confirm a remap survives
+  a replug (persisted to flash, not just RAM).
 - **A3 — screen tool**: ✅ device write + orientation verified; ✅ image import/decode done
   (`src/image.js`, `upload-image.js` CLI + in-app upload). Still: GIF animation and a preview canvas.
 - **A4 — RGB + polish + packaging**: RGB scope decided (global effect/brightness/speed/color only).

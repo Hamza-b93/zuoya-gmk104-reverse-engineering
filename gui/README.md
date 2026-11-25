@@ -24,7 +24,8 @@ Run it with `npm start`. Next: the keymap-grid editor and a Tailwind build step.
 | Electron shell (window + secure IPC bridge) | ✅ boots; `main.js` + `preload.cjs` + `renderer/`. `npm start`. |
 | App UI — detect device, upload image | ✅ cards wired to the device layer over IPC. |
 | Image → screen CLI + decoder (`src/image.js`, `upload-image.js`) | ✅ `npm run upload -- photo.png`; offline test `npm run test:image`. |
-| Keymap-grid editor UI (read → click → `set_buffer` write-back) | ✅ built: full board from the VIA JSON, per-layer, keycode picker, write with read-back confirm. **Write not yet exercised on hardware.** |
+| Keymap-grid editor UI (read → click → `set_buffer` write-back) | ✅ built: full board from the VIA JSON, per-layer, keycode picker, write with read-back confirm. Write path **verified on hardware** (`0,0` Esc→Z→Esc round trip, read-back confirmed). |
+| Headless write check (`write-key.js`) | ✅ `npm run write-key -- <layer> <row> <col> [code]` — read a cell, or write + confirm, no GUI. |
 | KLE layout parser (`src/layout.js`) | ✅ parses the VIA definition; offline test `npm run test:layout`. |
 | Styling: hand-rolled CSS for now; Tailwind build step | ⬜ not wired (CSS in `renderer/style.css`) |
 | udev rule (`linux/92-zuoya-via.rules`) | ⚠️ installed to `/etc/udev/rules.d/`, but its `uaccess` ACL was not applied on the test machine. The screen node was opened with `chgrp wheel` + `chmod 0660` instead. |
@@ -45,6 +46,7 @@ gui/
 │   ├── screen-device.js # write screen reports to the 0xFF1C node
 │   └── image.js      # decode any image file -> 180x180 RGB888 (sharp)
 ├── upload-image.js   # CLI: upload an image file to the screen (npm run upload)
+├── write-key.js      # CLI: read/write one keymap cell with read-back (npm run write-key)
 ├── test-handshake.js # proves comms + reads back real keys from the keyboard
 ├── test-screen-codec.js # offline codec test (npm run test:screen)
 ├── test-image.js     # offline image-decoder test (npm run test:image)
@@ -124,9 +126,10 @@ Windows tool / Wine first — it holds the hidraw handle.
 
 ## Next (when we resume)
 
-1. **Exercise the keymap write on hardware** — the editor writes via `set_buffer` with read-back
-   confirmation, but this is the first write path and has never touched a real board. Verify a
-   remap sticks and survives replug, and confirm no VIA quirk (e.g. a commit/save step) is needed.
+1. **Keymap write is verified on hardware** (single-cell round trip, read-back confirmed). Still
+   worth checking once more: that a remap *survives a replug* (persists to the keyboard's flash,
+   not just RAM) and that there's no VIA commit/save step. Use `npm run write-key` to test cells
+   without the GUI.
 2. Screen uploader UX in-app: thumbnail/preview before push, drag-and-drop, maybe a live 180×180
    preview canvas. The decode + device path are done (`src/image.js` → `uploadImage`).
 3. Swap the hand-rolled `renderer/style.css` for a real Tailwind build step (declared stack).

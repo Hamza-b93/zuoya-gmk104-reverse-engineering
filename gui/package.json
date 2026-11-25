@@ -9,6 +9,7 @@
     "start": "electron .",
     "handshake": "node test-handshake.js",
     "upload": "node upload-image.js",
+    "write-key": "node write-key.js",
     "test:screen": "node --test test-screen-codec.js",
     "test:image": "node --test test-image.js",
     "test:layout": "node --test test-layout.js"
