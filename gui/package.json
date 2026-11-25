@@ -1,10 +1,10 @@
 {
-  "name": "zuoya-control",
+  "name": "keeb-control",
   "version": "0.0.1",
   "private": true,
-  "description": "Linux GUI to configure the ZUOYA GMK104 keyboard + screen over hidraw (no flashing).",
-  "author": "ZUOYA GMK104 reverse-engineering project",
-  "license": "MIT",
+  "description": "Keeb Control — configure the ZUOYA GMK104 and compatible VIA keyboards + screen over hidraw (no flashing).",
+  "author": "Hamza-b93",
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "main.js",
   "scripts": {
@@ -29,9 +29,9 @@
     "electron-builder": "^26.0.12"
   },
   "build": {
-    "appId": "org.zuoya.control",
-    "productName": "ZUOYA Control",
-    "artifactName": "zuoya-control-${version}-${arch}.${ext}",
+    "appId": "io.github.Hamza-b93.keeb_control",
+    "productName": "Keeb Control",
+    "artifactName": "keeb-control-${version}-${arch}.${ext}",
     "files": [
       "main.js",
       "preload.cjs",
@@ -56,13 +56,11 @@
       "category": "Utility",
       "icon": "build/icon.png",
       "target": ["AppImage", "snap", "flatpak"],
-      "desktopName": "zuoya-control",
-      "synopsis": "Configure ZUOYA GMK104 (and similar VIA keyboards) over hidraw — no flashing.",
-      "maintainer": "ZUOYA GMK104 reverse-engineering project"
+      "synopsis": "Configure ZUOYA GMK104 and compatible VIA keyboards over hidraw — no flashing.",
+      "maintainer": "Hamza-b93"
     },
-    "syncDesktopName": true,
     "appImage": {
-      "artifactName": "zuoya-control-${version}-${arch}.${ext}"
+      "artifactName": "keeb-control-${version}-${arch}.${ext}"
     }
   }
 }

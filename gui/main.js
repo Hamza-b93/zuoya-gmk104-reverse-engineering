@@ -46,7 +46,7 @@ function createWindow() {
     width: 980,
     height: 720,
     backgroundColor: '#0b0f17',
-    title: 'ZUOYA GMK104 Control',
+    title: 'Keeb Control',
     webPreferences: {
       preload: join(__dirname, 'preload.cjs'),
       contextIsolation: true,

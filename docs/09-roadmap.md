@@ -67,6 +67,17 @@ Tauri was the original recommendation here; it was not chosen. GTK4/libadwaita w
   diagnostics dump (`gui/doctor.js`) + a GitHub issue form so owners of other VIA keyboards can
   request support. Keymap generalizes by usage page; the screen tool needs per-board confirmation.
 
+### Distribution (identity decided: "Keeb Control", `io.github.Hamza-b93.keeb_control`, GPL-3.0)
+- **GitHub Releases** — ✅ automated. Tag `v*` → CI builds AppImage (+ best-effort Snap/Flatpak) →
+  attaches to a **draft** release for manual publish. This is the only fully-automatable channel.
+- **Store publishing — deferred** (needs the owner's accounts; not automatable from CI alone):
+  - **AUR**: write a `-bin` `PKGBUILD` + `.SRCINFO` that wraps the release AppImage; push with an
+    AUR account + SSH key.
+  - **Flathub**: write the Flatpak manifest + AppStream metainfo; open a PR to `flathub/flathub`
+    and pass maintainer review (Flathub builds it, not our CI). App id already Flathub-namespaced.
+  - **Snap Store**: register the snap name, add store credentials as a repo secret, `snapcraft upload`.
+  - Others (COPR, OBS, Debian, AppImageHub) — each its own process; revisit on demand.
+
 ---
 
 ## Track B — Open on-device firmware (flashing)

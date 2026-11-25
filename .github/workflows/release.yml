@@ -42,10 +42,13 @@ jobs:
       - name: Build Snap + Flatpak (best effort)
         run: npx electron-builder --linux snap flatpak || echo "snap/flatpak build skipped or failed — see log"
 
-      - name: Upload artifacts to the release
+      - name: Publish a DRAFT GitHub Release with the artifacts
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          name: "Keeb Control ${{ github.ref_name }}"
+          draft: true            # stays private until you click Publish on GitHub
+          generate_release_notes: true
           files: |
             gui/dist/*.AppImage
             gui/dist/*.snap

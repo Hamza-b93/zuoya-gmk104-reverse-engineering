@@ -1,10 +1,14 @@
-# zuoya-control (Track A — Linux GUI, no flashing)
+# Keeb Control (Track A — Linux GUI, no flashing)
 
-A desktop app to configure the ZUOYA GMK104's **keys** and **color screen** from Linux by
-talking to the **stock firmware** over `hidraw`. Nothing is flashed, so 2.4G / screen / RGB stay
-100% intact. See [`../docs/09-roadmap.md`](../docs/09-roadmap.md) for how this fits the bigger plan.
+**Keeb Control** is an *unofficial, community* desktop app to configure the ZUOYA GMK104's **keys**
+and **color screen** — and, increasingly, other compatible VIA keyboards — from Linux by talking to
+the **stock firmware** over `hidraw`. Nothing is flashed, so 2.4G / screen / RGB stay 100% intact.
+Not affiliated with or endorsed by ZUOYA. See [`../docs/09-roadmap.md`](../docs/09-roadmap.md) for
+how this fits the bigger plan.
 
-**Stack (chosen):** Electron + Node (`node-hid`) + a web frontend styled with Tailwind CSS.
+- **Package id:** `io.github.Hamza-b93.keeb_control`  ·  **License:** GPL-3.0-or-later
+- **Stack:** Electron + Node (`node-hid`, `sharp`). UI is hand-rolled CSS for now (Tailwind build
+  step is a planned follow-up).
 
 ## Status — device layer verified; Electron shell up
 
@@ -129,10 +133,13 @@ npm run dist        # AppImage
 npm run dist:all    # AppImage + Snap + Flatpak (needs snapcraft + flatpak-builder installed)
 ```
 
-- **AppImage builds and runs** (verified: `zuoya-control-<ver>-x86_64.AppImage`, ~147 MB).
-- **Snap/Flatpak** need `snapcraft` and `flatpak-builder`; the reliable way to produce all three
-  is CI — `.github/workflows/release.yml` builds them on a `v*` tag and attaches them to the
-  GitHub Release.
+- **AppImage builds and launches** (verified: `keeb-control-<ver>-x86_64.AppImage`, ~147 MB).
+- **Releases via CI, now:** `.github/workflows/release.yml` builds AppImage (+ best-effort
+  Snap/Flatpak) on a `v*` tag and attaches them to a **draft** GitHub Release — it stays private
+  until you click *Publish*, so nothing goes public automatically.
+- **Store publishing (Snap Store / Flathub / AUR) is deferred.** Each needs your own account and,
+  for Flathub, a reviewed PR; none can be done from CI alone. When you're ready, the build artifacts
+  are already produced — see the roadmap's distribution notes.
 - **Gotcha:** node-gyp cannot rebuild native modules (node-hid) when the project path contains a
   space. This repo's folder is `ZUOYA GMK104` (has a space), so `npm run dist` fails *locally*.
   CI checks out to a space-free path, so it's unaffected; to build locally, copy `gui/` (plus the
