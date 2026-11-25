@@ -14,7 +14,9 @@ how this fits the bigger plan.
 
 The hardware/device layer is **done and verified on real hardware**. The Electron shell now boots
 and surfaces three capabilities (detect device, read keymap, upload image) over a secure IPC bridge.
-Run it with `npm start`. Next: the keymap-grid editor and a Tailwind build step.
+Run it with `npm start`. Device layer, keymap editor and screen upload are all working and
+hardware-verified; `v0.1.1` is packaged (AppImage/Snap/Flatpak) as a draft release. Next: make the
+app registry-driven so it supports boards beyond the GMK104 (see "Next" at the bottom).
 
 | Piece | State |
 |---|---|
@@ -133,10 +135,12 @@ npm run dist        # AppImage
 npm run dist:all    # AppImage + Snap + Flatpak (needs snapcraft + flatpak-builder installed)
 ```
 
-- **AppImage builds and launches** (verified: `keeb-control-<ver>-x86_64.AppImage`, ~147 MB).
-- **Releases via CI, now:** `.github/workflows/release.yml` builds AppImage (+ best-effort
-  Snap/Flatpak) on a `v*` tag and attaches them to a **draft** GitHub Release — it stays private
-  until you click *Publish*, so nothing goes public automatically.
+- **v0.1.1 built successfully in CI** — AppImage (147 MB), Snap (127 MB) *and* Flatpak (108 MB) all
+  produced and attached to a **draft** GitHub Release (unpublished as of writing; smoke-test the
+  AppImage on a clean machine before publishing).
+- **Releases via CI:** `.github/workflows/release.yml` builds AppImage (+ best-effort Snap/Flatpak)
+  on a `v*` tag and attaches them to a **draft** release — stays private until you click *Publish*.
+  CI installs `libusb-1.0-0-dev` + `libudev-dev` first, which node-hid's native rebuild needs.
 - **Store publishing (Snap Store / Flathub / AUR) is deferred.** Each needs your own account and,
   for Flathub, a reviewed PR; none can be done from CI alone. When you're ready, the build artifacts
   are already produced — see the roadmap's distribution notes.
@@ -160,6 +164,11 @@ VIA keyboards (usage page `0xFF60`) can often be driven with no code change. To 
    **screen** tool additionally needs a `0xFF1C` interface that speaks the GMK104 upload protocol,
    which has to be confirmed per board (that's what the dump is for).
 
+> **Note:** the registry + diagnostics are in, but the GUI does not yet *load* a board from the
+> registry — it still reads the GMK104 layout at startup. Making layout loading registry-driven is
+> the top "Next" item below; until then, adding a board to the registry doesn't fully wire it into
+> the editor.
+
 ## Notes / gotchas (learned during bring-up)
 
 - This firmware **emulates** VIA. The single-key `get_keycode` (0x04) returns a **non-standard**
@@ -172,17 +181,21 @@ VIA keyboards (usage page `0xFF60`) can often be driven with no code change. To 
 
 ## Next (when we resume)
 
-1. **Keymap write is verified on hardware** (single-cell round trip, read-back confirmed). Still
-   worth checking once more: that a remap *survives a replug* (persists to the keyboard's flash,
-   not just RAM) and that there's no VIA commit/save step. Use `npm run write-key` to test cells
-   without the GUI.
-2. Screen uploader UX in-app: thumbnail/preview before push, drag-and-drop, maybe a live 180×180
+1. **Multi-board plumbing (top priority).** The GUI still hardcodes the GMK104 VIA JSON
+   (`main.js` → `viaDefPath()`). Make layout loading registry-driven: detect the connected board,
+   load its registered definition, and show a graceful "run `doctor` / unsupported board" state for
+   ones with no definition yet. This is what makes the app usable by people with other keyboards.
+2. **Verify a remap survives a replug** (persists to flash, not just RAM) and that there's no VIA
+   commit/save step. Keymap write is otherwise hardware-verified. Use `npm run write-key`.
+3. Screen uploader UX in-app: thumbnail/preview before push, drag-and-drop, maybe a live 180×180
    preview canvas. The decode + device path are done (`src/image.js` → `uploadImage`).
-3. Swap the hand-rolled `renderer/style.css` for a real Tailwind build step (declared stack).
-4. Make udev access work without manual permission changes (the rule is installed; the ACL needs investigating).
-5. RGB control via VIA channel 3 only (brightness, effect, speed, global color). A probe of channels 0–7 and value IDs 1–5 found no per-key channel, so per-key/ARGB editing is out of scope. Profiles and AppImage/Flatpak packaging come after that.
-6. GIF animation upload (first frame works today) — needs an animated capture to RE the `0x06`
+4. Swap the hand-rolled `renderer/style.css` for a real Tailwind build step (declared stack).
+5. Make udev access work without manual permission changes (the rule is installed; the ACL needs investigating).
+6. RGB control via VIA channel 3 only (brightness, effect, speed, global color). A probe of channels 0–7 and value IDs 1–5 found no per-key channel, so per-key/ARGB editing is out of scope.
+7. GIF animation upload (first frame works today) — needs an animated capture to RE the `0x06`
    metadata for multi-frame playback.
+8. Store listings (AUR / Flathub / Snap Store) — deferred until the AppImage is smoke-tested on a
+   clean machine and a few others have used it.
 
 The picker now covers letters/numbers/function/modifiers/nav/punctuation plus Media, System & Web,
 Edit-actions and Layers, and has a raw-keycode box for any 16-bit VIA code. Media/system labels use

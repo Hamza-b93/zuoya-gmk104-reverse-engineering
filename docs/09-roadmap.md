@@ -68,8 +68,11 @@ Tauri was the original recommendation here; it was not chosen. GTK4/libadwaita w
   request support. Keymap generalizes by usage page; the screen tool needs per-board confirmation.
 
 ### Distribution (identity decided: "Keeb Control", `io.github.Hamza-b93.keeb_control`, GPL-3.0)
-- **GitHub Releases** — ✅ automated. Tag `v*` → CI builds AppImage (+ best-effort Snap/Flatpak) →
-  attaches to a **draft** release for manual publish. This is the only fully-automatable channel.
+- **GitHub Releases** — ✅ automated and proven. Tag `v*` → CI builds AppImage (+ best-effort
+  Snap/Flatpak) → attaches to a **draft** release for manual publish. `v0.1.1` built all three
+  formats successfully (AppImage 147 MB, Snap 127 MB, Flatpak 108 MB) and sits as an unpublished
+  draft. (CI needs `libusb-1.0-0-dev` + `libudev-dev` for node-hid's native rebuild.) This is the
+  only fully-automatable channel.
 - **Store publishing — deferred** (needs the owner's accounts; not automatable from CI alone):
   - **AUR**: write a `-bin` `PKGBUILD` + `.SRCINFO` that wraps the release AppImage; push with an
     AUR account + SSH key.
