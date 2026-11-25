@@ -23,11 +23,12 @@ with a focus on **using the board on Linux**.
 | `ZUOYA-GMK104-CS49BE-V0105-20240815.exe` | Vendor firmware **OTA updater**, bundling firmware **V01.05**. |
 | `ZUOYA-GK104-CS9DB8-V0111-20260511.exe` | **Same** OTA updater app, bundling newer firmware **V01.11**. |
 | `qmk_toolbox_beta.exe` | Stock, unmodified community **QMK Toolbox** (the seller's suggested flasher — which does **not** work here). |
-| `Image Custom Tool 0703.exe` | Evision/Acrox Windows tool for uploading **images/GIFs to the keyboard's color screen**. Windows-only; not a firmware/keymap tool. |
+| `Image Custom Tool 0703.exe` | Evision/Acrox Windows tool for uploading **images/GIFs to the keyboard's color screen**. Its upload protocol is now fully reverse-engineered (see docs/08) — a Linux uploader is possible without it. |
 | `docs/` | Full write-up (see below) + the analysis scripts used. |
 | `extracted/` | The **stock firmware blob** carved out of the vendor `.exe` (your only backup). |
 | `zmk-port/` | **Draft** ZMK board scaffold for the GMK104 (not yet flashed) — see [zmk-port/README.md](zmk-port/README.md). |
 | `linux/` | Host-side helpers — `92-zuoya-via.rules` udev rule for usevia.app without root. |
+| `screen-re/` | Screen-protocol RE: the live USB **capture**, the extracted outbound reports, a **reconstructed proof image**, and the decoder script. |
 
 ## Documentation
 
@@ -38,7 +39,7 @@ with a focus on **using the board on Linux**.
 - **[docs/05-zmk-porting-plan.md](docs/05-zmk-porting-plan.md)** — If you want to pursue ZMK: a GMK104-specific porting checklist + no-case-opening flash-path go/no-go, built from the sibling `rainy75-zmk` port.
 - **[docs/06-hardware-probe.md](docs/06-hardware-probe.md)** — Read-only USB/HID probe of a real unit: the 4-interface map confirming VIA (`0xFF60`), the OTA channel (`0xFFEF`), NKRO, and a 4th `0xFF1C` vendor channel.
 - **[docs/07-firmware-gpio-re.md](docs/07-firmware-gpio-re.md)** — Static RISC-V disassembly of the stock firmware confirming all 8 matrix **row** GPIOs (incl. `row6=PE3`, `row7=PD7`) for the ZMK port.
-- **[docs/08-screen-protocol.md](docs/08-screen-protocol.md)** — Screen (`0xFF1C`) upload protocol RE: the 17-byte command/handshake channel recovered from the Windows tool; the pixel pipeline still needs a USB capture.
+- **[docs/08-screen-protocol.md](docs/08-screen-protocol.md)** — Screen (`0xFF1C`) upload protocol **fully reverse-engineered** (live usbmon capture of the Windows tool under Wine): **180×180, RGB565 big-endian**, 64-byte reports, the checksum, and the complete command sequence — enough to upload images from Linux without Wine. Raw capture + reconstructed proof image in [`screen-re/capture/`](screen-re/capture/).
 
 ## Verdict on "can it run VIA firmware?"
 
@@ -52,4 +53,4 @@ Two different claims hide under "VIA support":
 
 ---
 
-*Last updated: 2026-11-25. See `docs/` for evidence and reproduction steps.*
+*Last updated: 2026-11-25. Screen upload protocol fully reverse-engineered (180×180 RGB565-BE). See `docs/` for evidence and reproduction steps.*

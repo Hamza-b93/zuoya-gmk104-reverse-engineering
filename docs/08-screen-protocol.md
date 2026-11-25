@@ -1,71 +1,139 @@
-# Screen Protocol RE — partial (control channel found; pixel path open)
+# Screen Protocol RE — COMPLETE (control + pixel pipeline captured)
 
-Reverse-engineering the GMK104 **color-screen** upload protocol from the Windows "Image
-Custom Tool" (`Image Custom Tool.exe`, native C++/MFC + OpenCV). Goal: a Linux-native image
-uploader + groundwork for a ZMK display driver. **Status: the control/handshake protocol is
-recovered; the bulk pixel pipeline still needs a live USB capture.**
+Reverse-engineering of the GMK104 **color-screen** image-upload protocol. The control/handshake
+path was first recovered statically from the Windows "Image Custom Tool" (`Image Custom Tool.exe`,
+native C++/MFC + OpenCV); the **full pixel pipeline** was then captured live by running the tool
+under **Wine** while sniffing USB with **usbmon/dumpcap**, uploading a solid-red test image, and
+decoding the on-wire reports. The reconstructed framebuffer matches the uploaded image exactly, so
+the protocol below is confirmed end-to-end and is enough to build a Linux uploader.
 
-All static, from the extracted binary — nothing sent to the keyboard.
+**Status: SOLVED.** Resolution, pixel format, framing, addressing, checksum, and the full
+command sequence are all recovered. Raw evidence is in [`../screen-re/capture/`](../screen-re/capture/).
 
-## Confirmed
+## Panel
 
-- **Interface**: the screen is the 4th HID interface — usage page **`0xFF1C`**, usage `0x92`,
-  **Report ID 4** (from [06-hardware-probe.md](06-hardware-probe.md)).
-- **Transport**: `HidD_SetOutputReport` (device enumerated via `SetupDi*` + `CreateFileW`;
-  handle stored at `object+0x8B4`). Reports are **17 bytes** (1 report ID + 16 payload).
-- **Command function** at `0x00491280` sends a fixed **12-packet sequence** — a
-  handshake / frame-select, not pixel data. Decoded immediates per packet:
+| Property | Value |
+|---|---|
+| **Resolution** | **180 × 180** (confirmed: the first non-red pixel in the capture is at index **32400 = 180×180**, on a clean row boundary) |
+| **Pixel format** | **RGB565, big-endian** (MSB first) — pure red = word `0xF800` = bytes `F8 00` |
+| **Order** | row-major, top-left origin (exact orientation/mirroring still to be confirmed with an asymmetric test pattern) |
+| **Framebuffer** | 180×180 = 32400 px = **64 800 bytes**, padded by the tool to **65 536 bytes** (0x10000); only the first 64 800 bytes are displayed |
 
-  | # | byte[1] | byte[2] |   | # | byte[1] | byte[2] |
-  |---|---------|---------|---|---|---------|---------|
-  | 1 | `0x22` | `0xAA` (lead `0xFF`) | | 7 | `0x44` | `0xAB` |
-  | 2 | `0xAD` | | | 8 | `0xAE` | |
-  | 3 | `0x44` | `0xAA` | | 9 | `0x22` | `0xAC` |
-  | 4 | `0xAD` | | | 10 | `0xAF` | |
-  | 5 | `0x22` | `0xAB` | | 11 | `0x44` | `0xAC` |
-  | 6 | `0xAE` | | | 12 | `0xAF` | |
+## Transport
 
-  Pattern: a `0x22`/`0x44` phase byte with an **incrementing index** `0xAA→0xAB→0xAC`
-  (paired with `0xAD→0xAE→0xAF`). Each packet also copies a 6–7 byte parameter field from
-  local state (likely a device/screen id or address). This looks like a per-block
-  select/commit sequence.
+- **Interface**: 4th HID interface — usage page **`0xFF1C`**, **Report ID `0x04`**. On Linux this
+  enumerates as a dedicated `hidraw` node (identify it by the usage page `06 1C FF` in its report
+  descriptor; on the test unit it was `/dev/hidraw4`, interface 3). VID `0x320F` / PID `0x5055` (wired).
+- **Reports**: fixed **64-byte** HID output reports (`os.write` to the hidraw fd, first byte = report ID).
+- Statically, the tool sends the 12-packet *command* handshake via `HidD_SetOutputReport`
+  (`0x00491280`); the bulk pixel data goes out as more 64-byte reports on the same interface.
 
-## Not yet recovered (needs a capture)
+## Packet format (all packets)
 
-- The **bulk pixel transfer** path (it is **not** via `HidD_SetOutputReport` — all 12 of
-  those sites are 17-byte command packets; pixel data likely goes through the `WriteFile`
-  object-wrapper at `0x004CC600`, but the caller/loop wasn't traced).
-- **Pixel format** (RGB565 vs RGB888 — the editor stores per-pixel R/G/B), **panel
-  resolution** (editor canvas is 180×180; the real panel may differ), row/column order,
-  and the **addressing/framing** of a full frame. GIF/animation handling.
+Every 64-byte report has the same envelope:
 
-Tracing these statically through the MFC+OpenCV code is possible but slow and
-error-prone without execution.
-
-## Recommended way to finish: a USB capture
-
-The reliable completion is to capture the tool actually uploading one image, then replay the
-bytes from Linux:
-
-1. On **Windows**, install **Wireshark + USBPcap** (or use a hardware USB analyzer).
-2. Start capture on the keyboard's USB device, upload a solid-color test image in the tool,
-   stop capture.
-3. The `0xFF1C` / Report ID 4 output reports on the wire give the exact command sequence +
-   the pixel framing directly. A solid-color image makes the pixel format obvious.
-4. From those bytes, a Linux uploader is a short `hidraw` script (open the `0xFF1C`
-   interface — see `reverse`-style tooling — and replay/parameterize the frames).
-
-(Running the tool under Wine with `usbmon` is a long shot — Wine HID passthrough to a real
-device is unreliable — and it would write to the keyboard, so it's not attempted here.)
-
-## Tools
-
-- [`../screen-re/find_hid_calls.py`](../screen-re/find_hid_calls.py) — locate HID send sites
-  in the PE (pefile + capstone).
-- [`../screen-re/classify_hid_calls.py`](../screen-re/classify_hid_calls.py) — classify each
-  site by argument length / loop context.
-
-Run with capstone + pefile (e.g. in a venv):
-```bash
-python3 screen-re/find_hid_calls.py "Image Custom Tool.exe"
 ```
+byte 0      : 0x04                 report ID
+byte 1..2   : checksum, LE16       = sum(bytes[3..63]) & 0xFFFF
+byte 3      : opcode
+byte 4..    : opcode-specific body (zero-padded to 64 bytes)
+```
+
+**Checksum** (verified against all 1171 pixel packets *and* every command packet):
+
+```
+cksum = sum(report[3:64]) & 0xFFFF      # little-endian into bytes 1,2
+```
+
+## Command sequence
+
+One still-image upload is: **prologue → pixel stream → epilogue**.
+
+### Prologue (5 packets, sent verbatim)
+
+| # | opcode | report (first bytes) | role (inferred) |
+|---|--------|----------------------|-----------------|
+| 1 | `0x01` | `04 01 00 01 00…` | begin / select screen |
+| 2 | `0x06` | `04 29 07 06 30 00 00 00 00 01 04 02 00 01 FF FF FF …` | metadata (frame config / colors / timing) |
+| 3 | `0x02` | `04 02 00 02 00…` | — |
+| 4 | `0x23` | `04 23 00 23 00…` | prepare pixel write |
+| 5 | `0x01` | `04 01 00 01 00…` | begin pixel stream |
+
+The opcode-`0x06` metadata packet's full bytes (payload): `30 00 00 00 00 01 04 02 00 01 FF FF FF
+00 00 00 00 00 00 FF 00 00 00 00 00 00 FF 00 09 02 FF 00 01 01 06 15 06 03 25 11 26 00 64 …`.
+For a fixed 180×180 still it is constant, so replay it verbatim. (It likely encodes frame count,
+interval, and a background/key color — relevant only for GIF/multi-frame, not yet parsed.)
+
+### Pixel stream (opcode `0x21`)
+
+```
+byte 0      : 0x04
+byte 1..2   : checksum (LE16)
+byte 3      : 0x21                 write-pixels opcode
+byte 4      : length               0x38 (56) for all but the last packet, 0x10 (16) for the last
+byte 5..7   : destination offset   LE24, into the 65 536-byte framebuffer
+byte 8..    : pixel payload        <length> bytes = RGB565-BE, 28 px per full packet
+```
+
+- Offsets run **0, 56, 112, … 65 520**, step **56**. 1169 packets of 56 bytes + 1 final packet of
+  16 bytes = **1170 pixel packets**, covering all 65 536 bytes.
+- Payload is the raw framebuffer slice `fb[offset : offset+length]`.
+
+### Epilogue (1 packet)
+
+| opcode | report | role |
+|--------|--------|------|
+| `0x02` | `04 02 00 02 00…` | commit / refresh (image appears) |
+
+Total for one image = 5 + 1170 + 1 = **1176** output reports.
+
+## Building the framebuffer
+
+```
+img  -> resize to 180x180 -> for each pixel (row-major):
+          v = ((R>>3)<<11) | ((G>>2)<<5) | (B>>3)      # RGB565
+          emit big-endian: bytes[(v>>8)&0xFF, v&0xFF]
+fb   = 64 800 bytes, then pad to 65 536 with 0x00 (padding is not displayed)
+```
+
+## Evidence / reproduction
+
+- [`../screen-re/capture/screen_red_upload.pcapng`](../screen-re/capture/) — the live usbmon capture
+  (bus 3), 4708 frames, 1177 host→device 64-byte reports.
+- [`../screen-re/capture/out_reports_hex.txt`](../screen-re/capture/) — the 1177 outbound report
+  payloads as hex, in order.
+- [`../screen-re/capture/reconstructed_180x180.png`](../screen-re/capture/) — the framebuffer rebuilt
+  from the capture (solid red + a thin padding-noise strip past pixel 32400), proving format + resolution.
+- [`../screen-re/decode_screen.py`](../screen-re/decode_screen.py) — classifier/decoder used above.
+
+Recapture (tool under Wine):
+```bash
+# keyboard on bus N (VID 320f): check /sys/bus/usb/devices/*/idVendor
+sudo modprobe usbmon
+sudo dumpcap -q -i usbmonN -a duration:1200 -w screen.pcapng   # start, then upload in the tool
+# extract outbound reports:
+tshark -r screen.pcapng -Y 'usb.endpoint_address.direction==0 && usb.data_len>0' \
+       -T fields -e usb.capdata
+```
+
+## Linux uploader — plan (not yet implemented)
+
+A `hidraw` uploader needs no Wine:
+
+1. **Find the node** — scan `/sys/class/hidraw/*/device/report_descriptor` for usage page `06 1C FF`
+   and VID `320F`; open that `/dev/hidrawX` (`--device` to override). Needs rw (udev rule / chmod).
+2. **Prep image** — load (Pillow), resize to 180×180, encode RGB565-BE row-major, pad to 65 536.
+3. **Prologue** — emit the 5 wrapper packets (opcodes `01, 06, 02, 23, 01`), recomputing checksums.
+4. **Pixels** — for `offset` in `range(0, 65536, 56)`: build `04 | cksum | 21 | len | offset(LE24) |
+   payload` and write; last `len` = 16.
+5. **Epilogue** — emit opcode `02` (commit).
+
+Caveats: **close the Windows tool / Wine first** (it holds the hidraw handle); tune a small
+inter-write delay if needed; GIF/animation = multiple frames + the opcode-`06` metadata parsed.
+First test should push an **asymmetric** pattern (e.g. 4 colored quadrants) to lock down orientation.
+
+## Reverting an uploaded image
+
+Nothing is flashed — the image is just data in the screen framebuffer. To change it back, **upload a
+different image** with the tool (import → upload-all). Note: the tool's `显示模式` (Display-mode)
+dropdown is `visible="false"` in this build, so that route is not available in the UI.
