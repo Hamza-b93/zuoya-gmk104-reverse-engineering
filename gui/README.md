@@ -22,9 +22,10 @@ Run it with `npm start`. Next: the keymap-grid editor and a Tailwind build step.
 | Screen codec (`src/screen.js`) | ✅ ported; matches the captured upload offline (`npm run test:screen`). |
 | Screen device write (`src/screen-device.js`) | ✅ verified on hardware: four-quadrant test pattern (`node send-test-pattern.js`) shows the correct orientation. |
 | Electron shell (window + secure IPC bridge) | ✅ boots; `main.js` + `preload.cjs` + `renderer/`. `npm start`. |
-| App UI — detect device, read keymap, upload image | ✅ first pass: three cards wired to the device layer over IPC. |
+| App UI — detect device, upload image | ✅ cards wired to the device layer over IPC. |
 | Image → screen CLI + decoder (`src/image.js`, `upload-image.js`) | ✅ `npm run upload -- photo.png`; offline test `npm run test:image`. |
-| Keymap-grid editor UI (edit + `set_buffer` write-back) | ⬜ not started |
+| Keymap-grid editor UI (read → click → `set_buffer` write-back) | ✅ built: full board from the VIA JSON, per-layer, keycode picker, write with read-back confirm. **Write not yet exercised on hardware.** |
+| KLE layout parser (`src/layout.js`) | ✅ parses the VIA definition; offline test `npm run test:layout`. |
 | Styling: hand-rolled CSS for now; Tailwind build step | ⬜ not wired (CSS in `renderer/style.css`) |
 | udev rule (`linux/92-zuoya-via.rules`) | ⚠️ installed to `/etc/udev/rules.d/`, but its `uaccess` ACL was not applied on the test machine. The screen node was opened with `chgrp wheel` + `chmod 0660` instead. |
 
@@ -38,7 +39,8 @@ gui/
 ├── src/
 │   ├── device.js     # enumerate GMK104 hidraw interfaces, open by usage page
 │   ├── via.js        # VIA codec: protocol version, layer count, get/set keymap buffer
-│   ├── keycodes.js   # minimal keycode -> label map
+│   ├── keycodes.js   # keycode <-> label map + grouped picker palette
+│   ├── layout.js     # parse the VIA KLE layout -> positioned keys + matrix; keymap offsets
 │   ├── screen.js     # screen codec: RGB888 -> RGB565-BE reports (offline, no I/O)
 │   ├── screen-device.js # write screen reports to the 0xFF1C node
 │   └── image.js      # decode any image file -> 180x180 RGB888 (sharp)
@@ -58,10 +60,15 @@ npm install
 npm start        # launches the Electron window
 ```
 
-The window has three cards — **Detect** (lists the hidraw interfaces by usage page), **Read keymap**
-(VIA protocol version, layer count, decoded top row), and **Upload image…** (file picker → 180×180 →
-screen). Each button calls the same verified device layer the CLIs use, over the `preload.cjs` bridge.
-It needs the same hidraw access as the probe below (udev rule or the `chgrp` fallback).
+Two tabs:
+- **Device & Screen** — **Detect** (lists the hidraw interfaces by usage page) and **Upload image…**
+  (file picker → 180×180 → screen).
+- **Keymap** — renders the full board from the VIA JSON, one layer at a time. **Read from keyboard**
+  pulls every layer's keycodes; click a key, pick a new keycode, and it's written over VIA
+  (`set_buffer`) and read back to confirm.
+
+Each action calls the same verified device layer the CLIs use, over the `preload.cjs` bridge. It needs
+the same hidraw access as the probe below (udev rule or the `chgrp` fallback).
 
 ## Run the handshake probe
 
@@ -117,12 +124,15 @@ Windows tool / Wine first — it holds the hidraw handle.
 
 ## Next (when we resume)
 
-1. Keymap-grid editor from the VIA JSON layout (read → edit → `set_buffer` write) — the first
-   write-back path, still never exercised. Needs a fuller keycode table than `src/keycodes.js`.
-2. Screen uploader UX in-app: thumbnail/preview before push, drag-and-drop, maybe a live 180×180
+1. **Exercise the keymap write on hardware** — the editor writes via `set_buffer` with read-back
+   confirmation, but this is the first write path and has never touched a real board. Verify a
+   remap sticks and survives replug, and confirm no VIA quirk (e.g. a commit/save step) is needed.
+2. Fuller keycode table + raw-hex entry in the picker (current `src/keycodes.js` covers the common
+   keys; media/system/RGB/macro codes are not listed yet).
+3. Screen uploader UX in-app: thumbnail/preview before push, drag-and-drop, maybe a live 180×180
    preview canvas. The decode + device path are done (`src/image.js` → `uploadImage`).
-3. Swap the hand-rolled `renderer/style.css` for a real Tailwind build step (declared stack).
-4. Make udev access work without manual permission changes (the rule is installed; the ACL needs investigating).
-5. RGB control via VIA channel 3 only (brightness, effect, speed, global color). A probe of channels 0–7 and value IDs 1–5 found no per-key channel, so per-key/ARGB editing is out of scope. Profiles and AppImage/Flatpak packaging come after that.
-6. GIF animation upload (first frame works today) — needs an animated capture to RE the `0x06`
+4. Swap the hand-rolled `renderer/style.css` for a real Tailwind build step (declared stack).
+5. Make udev access work without manual permission changes (the rule is installed; the ACL needs investigating).
+6. RGB control via VIA channel 3 only (brightness, effect, speed, global color). A probe of channels 0–7 and value IDs 1–5 found no per-key channel, so per-key/ARGB editing is out of scope. Profiles and AppImage/Flatpak packaging come after that.
+7. GIF animation upload (first frame works today) — needs an animated capture to RE the `0x06`
    metadata for multi-frame playback.

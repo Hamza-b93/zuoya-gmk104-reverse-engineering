@@ -10,7 +10,8 @@
     "handshake": "node test-handshake.js",
     "upload": "node upload-image.js",
     "test:screen": "node --test test-screen-codec.js",
-    "test:image": "node --test test-image.js"
+    "test:image": "node --test test-image.js",
+    "test:layout": "node --test test-layout.js"
   },
   "dependencies": {
     "node-hid": "^3.1.2",

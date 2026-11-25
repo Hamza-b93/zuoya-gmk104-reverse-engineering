@@ -1,5 +1,6 @@
-// Minimal QMK/VIA keycode -> label map (enough to read back a keymap sanely).
-// Full VIA keycode tables can replace this later.
+// QMK/VIA keycode <-> label map. Enough to read a keymap back and to repaint a
+// key after an edit. Codes are the full 16-bit VIA keycode (basic keys = HID
+// usage in the low byte, e.g. KC_A = 0x0004). Full VIA tables can replace this.
 const K = {
   0x00: 'KC_NO', 0x01: '▽', 0x04: 'A', 0x05: 'B', 0x06: 'C', 0x07: 'D', 0x08: 'E',
   0x09: 'F', 0x0a: 'G', 0x0b: 'H', 0x0c: 'I', 0x0d: 'J', 0x0e: 'K', 0x0f: 'L',
@@ -14,12 +15,40 @@ const K = {
   0x45: 'F12', 0x46: 'PrtSc', 0x47: 'ScrLk', 0x48: 'Pause', 0x49: 'Ins',
   0x4a: 'Home', 0x4b: 'PgUp', 0x4c: 'Del', 0x4d: 'End', 0x4e: 'PgDn',
   0x4f: '→', 0x50: '←', 0x51: '↓', 0x52: '↑', 0x53: 'NumLk',
+  0x54: 'KP/', 0x55: 'KP*', 0x56: 'KP-', 0x57: 'KP+', 0x58: 'KPEnt',
+  0x59: 'KP1', 0x5a: 'KP2', 0x5b: 'KP3', 0x5c: 'KP4', 0x5d: 'KP5', 0x5e: 'KP6',
+  0x5f: 'KP7', 0x60: 'KP8', 0x61: 'KP9', 0x62: 'KP0', 0x63: 'KP.',
   0xe0: 'LCtrl', 0xe1: 'LShift', 0xe2: 'LAlt', 0xe3: 'LGui',
   0xe4: 'RCtrl', 0xe5: 'RShift', 0xe6: 'RAlt', 0xe7: 'RGui',
 };
 
 export function keycodeName(kc) {
   if (kc in K) return K[kc];
-  if (kc >= 0x5000 && kc <= 0x5fff) return `LAYER(${kc & 0xff})`; // VIA layer range (approx)
+  if (kc >= 0x5200 && kc <= 0x521f) return `MO(${kc & 0x0f})`; // momentary layer (VIA)
+  if (kc >= 0x5220 && kc <= 0x523f) return `TG(${kc & 0x0f})`; // toggle layer (VIA)
   return `0x${kc.toString(16).padStart(4, '0')}`;
+}
+
+// Picker palette: grouped, assignable keycodes for the editor. `code` is the
+// 16-bit value written to the keymap buffer; `label` is what the key shows.
+function g(group, codes) {
+  return { group, items: codes.map((code) => ({ code, label: keycodeName(code) })) };
+}
+
+export const KEYCODE_GROUPS = [
+  g('Letters', range(0x04, 0x1d)),
+  g('Numbers', range(0x1e, 0x27)),
+  g('Function', range(0x3a, 0x45)),
+  g('Modifiers', [0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7]),
+  g('Editing', [0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x39, 0x49, 0x4c]),
+  g('Navigation', [0x4a, 0x4d, 0x4b, 0x4e, 0x4f, 0x50, 0x51, 0x52]),
+  g('Punctuation', [0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38]),
+  g('Layers', [0x5200, 0x5201, 0x5202, 0x5203, 0x5220, 0x5221, 0x5222, 0x5223]),
+  g('Special', [0x00]),
+];
+
+function range(lo, hi) {
+  const out = [];
+  for (let i = lo; i <= hi; i++) out.push(i);
+  return out;
 }

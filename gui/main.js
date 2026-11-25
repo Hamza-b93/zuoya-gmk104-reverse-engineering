@@ -3,14 +3,29 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 
 import { describe } from './src/device.js';
-import { withVia, getProtocolVersion, getLayerCount, getBuffer, decodeKeycodes } from './src/via.js';
-import { keycodeName } from './src/keycodes.js';
+import {
+  withVia, getProtocolVersion, getLayerCount, getBuffer, decodeKeycodes,
+  readKeymapBuffer, setBuffer,
+} from './src/via.js';
+import { keycodeName, KEYCODE_GROUPS } from './src/keycodes.js';
+import { buildLayout, keyOffset } from './src/layout.js';
 import { loadImage } from './src/image.js';
 import { uploadImage } from './src/screen-device.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const VIA_DEF_PATH = join(__dirname, '..', 'ZUOYA-GMK104-USB.json');
+
+// Parse the VIA definition once; it never changes at runtime.
+let layoutCache;
+function getLayout() {
+  if (!layoutCache) {
+    layoutCache = buildLayout(JSON.parse(readFileSync(VIA_DEF_PATH, 'utf8')));
+  }
+  return layoutCache;
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -69,6 +84,32 @@ handle('screen:pickAndUpload', async (opts = {}) => {
   const rgb = await loadImage(path, { fit: opts.fit ?? 'cover', background: opts.background ?? '#000000' });
   const reports = await uploadImage(rgb);
   return { canceled: false, path, reports };
+});
+
+// --- Keymap editor ---
+// Static layout + keycode palette (no device needed).
+handle('keymap:layout', () => ({ ...getLayout(), palette: KEYCODE_GROUPS }));
+
+// Read every layer's keycodes into a flat array (layer-major).
+handle('keymap:read', () => {
+  const { rows, cols } = getLayout();
+  return withVia((dev) => {
+    const layerCount = getLayerCount(dev);
+    const buf = readKeymapBuffer(dev, layerCount * rows * cols * 2);
+    return { layerCount, rows, cols, keycodes: decodeKeycodes(buf) };
+  });
+});
+
+// Write one key (layer,row,col -> 16-bit code) and read it back to confirm.
+handle('keymap:writeKey', ({ layer, row, col, code }) => {
+  const { rows, cols } = getLayout();
+  const offset = keyOffset({ layer, row, col, rows, cols });
+  return withVia((dev) => {
+    setBuffer(dev, offset, [(code >> 8) & 0xff, code & 0xff]);
+    const back = getBuffer(dev, offset, 2);
+    const confirmed = (back[0] << 8) | back[1];
+    return { code: confirmed, label: keycodeName(confirmed), ok: confirmed === code };
+  });
 });
 
 app.whenReady().then(() => {

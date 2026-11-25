@@ -12,41 +12,62 @@
       <p class="sub">Linux config over hidraw — no flashing. Device layer verified on hardware.</p>
     </header>
 
+    <nav class="tabs">
+      <button class="tab active" data-view="device">Device &amp; Screen</button>
+      <button class="tab" data-view="keymap">Keymap</button>
+    </nav>
+
     <main>
-      <section class="card">
-        <div class="card-head">
-          <h2>Device</h2>
-          <button id="btn-detect">Detect</button>
-        </div>
-        <div id="device-status" class="status">Not detected yet.</div>
-        <ul id="device-list" class="list"></ul>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <h2>Keymap</h2>
-          <button id="btn-keymap">Read keymap</button>
-        </div>
-        <div id="keymap-status" class="status">Reads protocol version, layer count, and the top row over VIA.</div>
-        <div id="keymap-meta" class="meta"></div>
-        <div id="keymap-row" class="keyrow"></div>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <h2>Screen</h2>
-          <div class="controls">
-            <label>Fit
-              <select id="fit">
-                <option value="cover">cover (crop)</option>
-                <option value="contain">contain (letterbox)</option>
-              </select>
-            </label>
-            <button id="btn-upload">Upload image…</button>
+      <!-- ============ DEVICE & SCREEN ============ -->
+      <div id="view-device" class="view active">
+        <section class="card">
+          <div class="card-head">
+            <h2>Device</h2>
+            <button id="btn-detect">Detect</button>
           </div>
-        </div>
-        <div id="screen-status" class="status">Pick an image — decoded to 180×180 and pushed to the panel.</div>
-      </section>
+          <div id="device-status" class="status">Not detected yet.</div>
+          <ul id="device-list" class="list"></ul>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Screen</h2>
+            <div class="controls">
+              <label>Fit
+                <select id="fit">
+                  <option value="cover">cover (crop)</option>
+                  <option value="contain">contain (letterbox)</option>
+                </select>
+              </label>
+              <button id="btn-upload">Upload image…</button>
+            </div>
+          </div>
+          <div id="screen-status" class="status">Pick an image — decoded to 180×180 and pushed to the panel.</div>
+        </section>
+      </div>
+
+      <!-- ============ KEYMAP EDITOR ============ -->
+      <div id="view-keymap" class="view">
+        <section class="card">
+          <div class="card-head">
+            <h2>Keymap editor</h2>
+            <div class="controls">
+              <span id="layer-tabs" class="layer-tabs"></span>
+              <button id="btn-keymap-read">Read from keyboard</button>
+            </div>
+          </div>
+          <div id="keymap-status" class="status">Read the keymap, click a key, then pick a new keycode. Writes go straight to the keyboard.</div>
+          <div id="keyboard" class="keyboard"></div>
+        </section>
+
+        <section id="picker-card" class="card hidden">
+          <div class="card-head">
+            <h2>Assign to <span id="picker-target" class="tag"></span></h2>
+            <button id="picker-close" class="ghost">Close</button>
+          </div>
+          <div id="picker" class="picker"></div>
+        </section>
+      </div>
     </main>
 
     <script src="renderer.js"></script>

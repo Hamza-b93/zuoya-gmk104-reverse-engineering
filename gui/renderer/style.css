@@ -89,9 +89,49 @@ button:disabled { opacity: 0.55; cursor: progress; }
 }
 .tag { font-weight: 700; color: var(--accent); }
 
-.keyrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.key {
-  min-width: 34px; text-align: center;
-  background: var(--panel-2); border: 1px solid var(--border);
-  border-radius: 6px; padding: 7px 8px; font-family: ui-monospace, monospace; font-size: 12px;
+/* ---------- tabs / views ---------- */
+.tabs { display: flex; gap: 6px; margin-top: 22px; border-bottom: 1px solid var(--border); }
+.tab {
+  background: transparent; color: var(--muted); border: 0; border-radius: 0;
+  padding: 10px 14px; font-weight: 600; border-bottom: 2px solid transparent;
 }
+.tab:hover { filter: none; color: var(--text); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.view { display: none; }
+.view.active { display: grid; gap: 16px; margin-top: 16px; }
+
+.hidden { display: none !important; }
+button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+button.ghost:hover { color: var(--text); filter: none; }
+
+/* ---------- layer tabs ---------- */
+.layer-tabs { display: inline-flex; gap: 4px; }
+.layer-tab {
+  background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 10px; font-weight: 600;
+}
+.layer-tab.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* ---------- keyboard grid ---------- */
+.keyboard { position: relative; margin-top: 14px; }
+.cap {
+  position: absolute;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 3px 5px; cursor: pointer; overflow: hidden; user-select: none;
+}
+.cap:hover { border-color: var(--accent); }
+.cap.selected { border-color: var(--accent); background: #22406b; }
+.cap.unread { opacity: 0.6; }
+.cap-label { font-size: 11px; font-weight: 600; line-height: 1.1; }
+.cap-mx { font-size: 8px; color: var(--muted); font-family: ui-monospace, monospace; align-self: flex-end; }
+
+/* ---------- keycode picker ---------- */
+.picker { display: grid; gap: 12px; }
+.picker-group-name { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
+.picker-keys { display: flex; flex-wrap: wrap; gap: 5px; }
+.picker-key {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 9px; font-weight: 600; font-size: 12px; min-width: 30px;
+}
+.picker-key:hover { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); filter: none; }

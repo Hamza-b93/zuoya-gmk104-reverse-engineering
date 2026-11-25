@@ -6,4 +6,7 @@ contextBridge.exposeInMainWorld('zuoya', {
   listDevices: () => ipcRenderer.invoke('device:list'),
   viaHandshake: () => ipcRenderer.invoke('via:handshake'),
   pickAndUpload: (opts) => ipcRenderer.invoke('screen:pickAndUpload', opts),
+  keymapLayout: () => ipcRenderer.invoke('keymap:layout'),
+  keymapRead: () => ipcRenderer.invoke('keymap:read'),
+  keymapWriteKey: (edit) => ipcRenderer.invoke('keymap:writeKey', edit),
 });
