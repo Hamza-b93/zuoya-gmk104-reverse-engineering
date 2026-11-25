@@ -205,6 +205,25 @@ async function assign(code) {
   setStatus($('keymap-status'), `Set ${row},${col} → ${res.data.label} (confirmed on device).`, 'ok');
 }
 
+// Parse "0x1d", "1d", "001D" (hex) or a plain decimal into a 0..0xffff code.
+function parseCode(text) {
+  const t = text.trim();
+  if (!t) return null;
+  const hex = /^0x[0-9a-f]+$/i.test(t) || /^[0-9a-f]*[a-f][0-9a-f]*$/i.test(t);
+  const n = hex ? Number.parseInt(t.replace(/^0x/i, ''), 16) : Number.parseInt(t, 10);
+  if (!Number.isInteger(n) || n < 0 || n > 0xffff) return null;
+  return n;
+}
+
+$('raw-assign').addEventListener('click', () => {
+  const code = parseCode($('raw-hex').value);
+  if (code == null) return setStatus($('keymap-status'), 'Enter a code from 0x0000 to 0xFFFF (e.g. 0x5201).', 'err');
+  assign(code);
+});
+$('raw-hex').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('raw-assign').click();
+});
+
 $('picker-close').addEventListener('click', clearSelection);
 
 $('btn-keymap-read').addEventListener('click', () =>

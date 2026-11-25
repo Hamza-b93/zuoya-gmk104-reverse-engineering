@@ -127,12 +127,14 @@ Windows tool / Wine first — it holds the hidraw handle.
 1. **Exercise the keymap write on hardware** — the editor writes via `set_buffer` with read-back
    confirmation, but this is the first write path and has never touched a real board. Verify a
    remap sticks and survives replug, and confirm no VIA quirk (e.g. a commit/save step) is needed.
-2. Fuller keycode table + raw-hex entry in the picker (current `src/keycodes.js` covers the common
-   keys; media/system/RGB/macro codes are not listed yet).
-3. Screen uploader UX in-app: thumbnail/preview before push, drag-and-drop, maybe a live 180×180
+2. Screen uploader UX in-app: thumbnail/preview before push, drag-and-drop, maybe a live 180×180
    preview canvas. The decode + device path are done (`src/image.js` → `uploadImage`).
-4. Swap the hand-rolled `renderer/style.css` for a real Tailwind build step (declared stack).
-5. Make udev access work without manual permission changes (the rule is installed; the ACL needs investigating).
-6. RGB control via VIA channel 3 only (brightness, effect, speed, global color). A probe of channels 0–7 and value IDs 1–5 found no per-key channel, so per-key/ARGB editing is out of scope. Profiles and AppImage/Flatpak packaging come after that.
-7. GIF animation upload (first frame works today) — needs an animated capture to RE the `0x06`
+3. Swap the hand-rolled `renderer/style.css` for a real Tailwind build step (declared stack).
+4. Make udev access work without manual permission changes (the rule is installed; the ACL needs investigating).
+5. RGB control via VIA channel 3 only (brightness, effect, speed, global color). A probe of channels 0–7 and value IDs 1–5 found no per-key channel, so per-key/ARGB editing is out of scope. Profiles and AppImage/Flatpak packaging come after that.
+6. GIF animation upload (first frame works today) — needs an animated capture to RE the `0x06`
    metadata for multi-frame playback.
+
+The picker now covers letters/numbers/function/modifiers/nav/punctuation plus Media, System & Web,
+Edit-actions and Layers, and has a raw-keycode box for any 16-bit VIA code. Media/system labels use
+the classic QMK keycode values; the write read-back will reveal any the firmware maps differently.

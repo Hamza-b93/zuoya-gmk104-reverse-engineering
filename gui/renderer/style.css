@@ -127,6 +127,14 @@ button.ghost:hover { color: var(--text); filter: none; }
 .cap-mx { font-size: 8px; color: var(--muted); font-family: ui-monospace, monospace; align-self: flex-end; }
 
 /* ---------- keycode picker ---------- */
+.raw-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.raw-row label { color: var(--muted); display: flex; align-items: center; gap: 7px; }
+.raw-row input {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 7px; padding: 6px 9px; width: 110px; font-family: ui-monospace, monospace;
+}
+.raw-row input:focus { outline: none; border-color: var(--accent); }
+.raw-row code, .muted code { font-family: ui-monospace, monospace; color: var(--text); }
 .picker { display: grid; gap: 12px; }
 .picker-group-name { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
 .picker-keys { display: flex; flex-wrap: wrap; gap: 5px; }

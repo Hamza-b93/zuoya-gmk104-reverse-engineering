@@ -65,6 +65,13 @@
             <h2>Assign to <span id="picker-target" class="tag"></span></h2>
             <button id="picker-close" class="ghost">Close</button>
           </div>
+          <div class="raw-row">
+            <label>Raw keycode
+              <input id="raw-hex" type="text" inputmode="text" placeholder="0x001d" autocomplete="off" spellcheck="false" />
+            </label>
+            <button id="raw-assign" class="ghost">Assign</button>
+            <span id="raw-hint" class="muted">any 16-bit VIA code, e.g. <code>0x5201</code> = MO(1)</span>
+          </div>
           <div id="picker" class="picker"></div>
         </section>
       </div>
