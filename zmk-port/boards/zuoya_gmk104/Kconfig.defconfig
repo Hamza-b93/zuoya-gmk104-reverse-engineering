@@ -1,0 +1,24 @@
+if BOARD_ZUOYA_GMK104
+
+config SOC_FLASH_TELINK_B91
+	default y if FLASH
+
+config WDT_B91
+	default y
+	depends on WDT
+
+# ---- B91 multi-level IRQ + timer fixes (Evision/B91 platform constants,
+#      carried over verbatim from rainy75-zmk; see its Kconfig.defconfig) ----
+config MAX_IRQ_PER_AGGREGATOR
+	default 64
+
+config 2ND_LVL_ISR_TBL_OFFSET
+	default 12
+
+config NUM_IRQS
+	default 76
+
+config SYS_CLOCK_TICKS_PER_SEC
+	default 32000
+
+endif # BOARD_ZUOYA_GMK104

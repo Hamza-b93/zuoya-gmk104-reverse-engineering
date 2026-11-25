@@ -1,0 +1,8 @@
+file_format: "2"
+id: zuoya_gmk104
+name: ZUOYA GMK104
+type: board
+arch: riscv
+outputs:
+  - usb
+  - ble

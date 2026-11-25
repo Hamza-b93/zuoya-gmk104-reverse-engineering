@@ -26,6 +26,7 @@ with a focus on **using the board on Linux**.
 | `Image Custom Tool 0703.exe` | Evision/Acrox Windows tool for uploading **images/GIFs to the keyboard's color screen**. Windows-only; not a firmware/keymap tool. |
 | `docs/` | Full write-up (see below) + the analysis scripts used. |
 | `extracted/` | The **stock firmware blob** carved out of the vendor `.exe` (your only backup). |
+| `zmk-port/` | **Draft** ZMK board scaffold for the GMK104 (not yet flashed) — see [zmk-port/README.md](zmk-port/README.md). |
 
 ## Documentation
 

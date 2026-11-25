@@ -11,7 +11,7 @@ This is the "is it a weekend or a month, and can we do it without opening the ca
 | Question | Verdict |
 |---|---|
 | Is the GMK104 the same platform as a board ZMK already runs on? | ✅ **Yes** — Evision "YKQ" / Telink TLSR9511, shared VID/PID `320F:5055`/`5088`, shared 8×16 matrix, VIA-V3 branch. Your updater is literally trademarked **YKQ**, the same developer-initials string rainy75 found inside the firmware. |
-| Can ZMK be flashed **without opening the case**? | ⚠️ **Probably yes** — the stock OTA's only gate is a **CRC16** integrity check (not a crypto signature), which is exactly what rainy75's `install_zmk.sh` bridge exploits. Needs one verification (below) that the GMK104's OTA report format matches. |
+| Can ZMK be flashed **without opening the case**? | ✅ **Yes (confirmed)** — the GMK104 uses the **identical** stock OTA protocol rainy75 already drives: the same **YKQ `KM_USB_mode_ota_pc` v5.0.2** flasher. Every constant matches (VID/PID `320F:5055`, usage page `0xFFEF`, report ID `05`, interface 2, CRC16 poly `0xA001`, cmd `0x01`/`0x02`). rainy75's `ota_flasher.py` should talk to the GMK104 as-is; its only gate is a CRC16 integrity check, not a signature. |
 | Is this a from-scratch port? | ❌ **No** — it's a **delta port**. Most of rainy75-zmk (SoC, open BLE, USB, RGB driver, DFU flow) transfers. |
 | Realistic effort | **Days-to-weeks** for someone comfortable with Zephyr + hardware bring-up — dominated by resolving the matrix/RGB deltas. Not a one-click flash. |
 | What you give up | **2.4 GHz dongle** (not ported anywhere), **the OLED screen** (no driver), **VIA** (replaced by ZMK Studio). USB + BLE only. |
@@ -124,9 +124,21 @@ differs in detail, the flasher needs small adjustments, or you fall back to the 
 - The default open-BLE build ships no proprietary code; only the opt-in `--blob` build links
   Telink's BLE blob (don't redistribute that build).
 
-## First concrete action
+## Phase 1 result (done)
 
-Phase 1 is pure desk work I can largely do from what's already here: line up the GMK104
-OTA protocol (reversed in `03`) against rainy75's flasher tooling and produce a definitive
-**no-case-opening go/no-go**, plus a first-draft `zuoya_gmk104` board skeleton + converted
-keymap. That's the next step whenever you want it.
+- **OTA go/no-go: GO (confirmed).** The GMK104 and rainy75 ship the *same* YKQ stock OTA
+  flasher; the protocol constants match exactly, so the no-case-opening bootstrap applies.
+- **Board scaffold created:** [`../zmk-port/boards/zuoya_gmk104/`](../zmk-port/boards/zuoya_gmk104/)
+  — a draft ZMK board generated from the VIA definition (correct matrix transform + physical
+  layout for all 107 keys), with the platform SoC/flash/USB/BLE/column wiring reused from
+  rainy75. See its [`BOARD-README.md`](../zmk-port/boards/zuoya_gmk104/BOARD-README.md) for the
+  status table and the remaining hardware unknowns.
+
+## Remaining before a first flash (needs the keyboard + toolchain)
+
+1. **Confirm the 2 extra row GPIOs** (rows 6–7) and the **RGB LED count** — probe on
+   hardware (rainy75's `boot_diag`/`rainy75_rgb.py` method) or RE the GMK104 stock firmware.
+2. **Resolve the duplicated `RC(7,13)` cell** (ESC vs the tall numpad key).
+3. **Stand up the build** inside a rainy75-zmk fork (Zephyr SDK 0.17.0), build the combined
+   image + bridge, then flash via the stock OTA and iterate in ZMK Studio.
+4. **Have SWS recovery ready** (Telink EVK) before the first write.

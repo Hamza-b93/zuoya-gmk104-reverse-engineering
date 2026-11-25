@@ -1,0 +1,5 @@
+board:
+  name: zuoya_gmk104
+  vendor: zuoya
+  socs:
+    - name: tlsr9518   # Zephyr SoC used by the rainy75-zmk fork for the TLSR9511/B91
