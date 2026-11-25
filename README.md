@@ -38,6 +38,7 @@ with a focus on **using the board on Linux**.
 - **[docs/05-zmk-porting-plan.md](docs/05-zmk-porting-plan.md)** — If you want to pursue ZMK: a GMK104-specific porting checklist + no-case-opening flash-path go/no-go, built from the sibling `rainy75-zmk` port.
 - **[docs/06-hardware-probe.md](docs/06-hardware-probe.md)** — Read-only USB/HID probe of a real unit: the 4-interface map confirming VIA (`0xFF60`), the OTA channel (`0xFFEF`), NKRO, and a 4th `0xFF1C` vendor channel.
 - **[docs/07-firmware-gpio-re.md](docs/07-firmware-gpio-re.md)** — Static RISC-V disassembly of the stock firmware confirming all 8 matrix **row** GPIOs (incl. `row6=PE3`, `row7=PD7`) for the ZMK port.
+- **[docs/08-screen-protocol.md](docs/08-screen-protocol.md)** — Screen (`0xFF1C`) upload protocol RE: the 17-byte command/handshake channel recovered from the Windows tool; the pixel pipeline still needs a USB capture.
 
 ## Verdict on "can it run VIA firmware?"
 
