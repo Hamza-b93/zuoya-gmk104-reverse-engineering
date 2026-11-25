@@ -1,0 +1,13 @@
+{
+  "name": "zuoya-control",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Linux GUI to configure the ZUOYA GMK104 keyboard + screen over hidraw (no flashing).",
+  "type": "module",
+  "scripts": {
+    "handshake": "node test-handshake.js"
+  },
+  "dependencies": {
+    "node-hid": "^3.1.2"
+  }
+}
