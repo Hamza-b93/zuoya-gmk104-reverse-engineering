@@ -25,6 +25,9 @@ document.querySelectorAll('.tab').forEach((tab) =>
     const view = tab.dataset.view;
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${view}`));
     if (view === 'keymap') ensureLayout();
+    if (view === 'macros') ensureMacros();
+    if (view === 'lighting') ensureLighting();
+    if (view === 'profiles') ensureProfiles();
     if (view === 'widgets') ensureWidgets();
   }),
 );
@@ -295,6 +298,360 @@ $('btn-keymap-read').addEventListener('click', () =>
     renderLayerTabs();
     paintKeycaps();
     setStatus($('keymap-status'), `Read ${state.layerCount} layers. Click a key to reassign it.`, 'ok');
+  }),
+);
+
+// ---------- Macros ----------
+const MAX_DELAY = 64769; // matches src/macros.js MAX_DELAY_MS
+const macroState = { loaded: false, count: 0, size: 0, slots: [], active: 0, keyOptions: '' };
+
+// Build grouped <option>s for the key dropdowns from the keymap palette, keeping
+// only basic 8-bit keycodes (macros can't carry 16-bit layer/custom codes).
+function buildKeyOptions() {
+  if (macroState.keyOptions) return;
+  let html = '';
+  for (const group of state.layout?.palette ?? []) {
+    const items = group.items.filter((it) => it.code <= 0xff && it.code > 0);
+    if (!items.length) continue;
+    html += `<optgroup label="${group.group}">`;
+    for (const it of items) html += `<option value="${it.code}">${it.label}</option>`;
+    html += '</optgroup>';
+  }
+  macroState.keyOptions = html || '<option value="4">A</option>';
+}
+
+// Client-side byte cost (mirror of macrosByteLength) so the budget updates live.
+function macroBytes(steps) {
+  let n = 1; // terminator
+  for (const s of steps) {
+    if (s.type === 'text') n += [...String(s.value)].length;
+    else if (s.type === 'delay') n += 4;
+    else n += 3;
+  }
+  return n;
+}
+const macrosBytes = () => macroState.slots.reduce((n, s) => n + macroBytes(s), 0);
+
+async function ensureMacros() {
+  if (macroState.loaded) return;
+  await ensureLayout(); // palette for the key dropdowns (no device needed)
+  buildKeyOptions();
+  macroState.loaded = true;
+}
+
+function renderSlots() {
+  const host = $('macro-slots');
+  host.innerHTML = '';
+  for (let i = 0; i < macroState.count; i++) {
+    const b = document.createElement('button');
+    b.className = 'layer-tab' + (i === macroState.active ? ' active' : '');
+    b.textContent = `M${i}`;
+    b.addEventListener('click', () => { macroState.active = i; renderSlots(); renderSteps(); });
+    host.appendChild(b);
+  }
+}
+
+function updateBudget() {
+  const used = macrosBytes();
+  const over = used > macroState.size;
+  $('macro-budget').textContent = `${used} / ${macroState.size} bytes`;
+  $('macro-budget').classList.toggle('err', over);
+  $('btn-macro-write').disabled = over;
+}
+
+function stepRow(step, idx) {
+  const li = document.createElement('li');
+  li.className = 'macro-step';
+  const steps = macroState.slots[macroState.active];
+  const badge = { text: 'TEXT', tap: 'TAP', down: 'HOLD ↓', up: 'REL ↑', delay: 'DELAY' }[step.type];
+
+  let control;
+  if (step.type === 'text') {
+    control = document.createElement('input');
+    control.type = 'text';
+    control.value = step.value;
+    control.placeholder = 'typed literally';
+    control.addEventListener('input', () => { step.value = control.value; updateBudget(); });
+  } else if (step.type === 'delay') {
+    control = document.createElement('input');
+    control.type = 'number';
+    control.min = 0; control.max = MAX_DELAY; control.value = step.ms;
+    control.className = 'macro-ms';
+    control.addEventListener('input', () => {
+      step.ms = Math.max(0, Math.min(MAX_DELAY, Number(control.value) || 0));
+      updateBudget();
+    });
+  } else {
+    control = document.createElement('select');
+    control.innerHTML = macroState.keyOptions;
+    control.value = String(step.code);
+    control.addEventListener('change', () => { step.code = Number(control.value); });
+  }
+  control.classList.add('macro-value');
+
+  const mk = (txt, title, fn, disabled) => {
+    const b = document.createElement('button');
+    b.className = 'ghost macro-mini'; b.textContent = txt; b.title = title;
+    b.disabled = !!disabled;
+    b.addEventListener('click', fn);
+    return b;
+  };
+  const move = (from, to) => {
+    if (to < 0 || to >= steps.length) return;
+    [steps[from], steps[to]] = [steps[to], steps[from]];
+    renderSteps();
+  };
+
+  const badgeEl = document.createElement('span');
+  badgeEl.className = 'macro-badge'; badgeEl.textContent = badge;
+  if (step.type === 'delay') {
+    const ms = document.createElement('span'); ms.className = 'muted macro-unit'; ms.textContent = 'ms';
+    li.append(badgeEl, control, ms);
+  } else {
+    li.append(badgeEl, control);
+  }
+  li.append(
+    mk('↑', 'Move up', () => move(idx, idx - 1), idx === 0),
+    mk('↓', 'Move down', () => move(idx, idx + 1), idx === steps.length - 1),
+    mk('✕', 'Remove', () => { steps.splice(idx, 1); renderSteps(); }),
+  );
+  return li;
+}
+
+function renderSteps() {
+  $('macro-editor').classList.remove('hidden');
+  $('macro-target').textContent = `Macro ${macroState.active}`;
+  const ul = $('macro-steps');
+  ul.innerHTML = '';
+  const steps = macroState.slots[macroState.active] ?? [];
+  if (!steps.length) {
+    ul.innerHTML = '<li class="macro-empty muted">Empty — add a step below.</li>';
+  } else {
+    steps.forEach((s, i) => ul.appendChild(stepRow(s, i)));
+  }
+  updateBudget();
+}
+
+// Add-step buttons.
+document.querySelectorAll('#macro-editor .macro-add button').forEach((btn) =>
+  btn.addEventListener('click', () => {
+    const steps = macroState.slots[macroState.active];
+    if (!steps) return;
+    const kind = btn.dataset.add;
+    if (kind === 'text') steps.push({ type: 'text', value: '' });
+    else if (kind === 'delay') steps.push({ type: 'delay', ms: 100 });
+    else if (kind === 'tap') steps.push({ type: 'tap', code: 0x04 });
+    else if (kind === 'down') steps.push({ type: 'down', code: 0xe1 });
+    else if (kind === 'up') steps.push({ type: 'up', code: 0xe1 });
+    renderSteps();
+  }),
+);
+
+$('btn-macro-read').addEventListener('click', () =>
+  withBusy($('btn-macro-read'), async () => {
+    await ensureMacros();
+    const res = await window.zuoya.macrosRead();
+    if (!res.ok) return setStatus($('macro-status'), res.error, 'err');
+    if (!res.data.supported) {
+      $('macro-editor').classList.add('hidden');
+      return setStatus($('macro-status'), `No macro support: ${res.data.reason}`, 'err');
+    }
+    macroState.count = res.data.count;
+    macroState.size = res.data.size;
+    macroState.slots = res.data.macros;
+    if (macroState.active >= macroState.count) macroState.active = 0;
+    renderSlots();
+    renderSteps();
+    setStatus($('macro-status'), `Read ${res.data.count} macro slot(s). ${res.data.used}/${res.data.size} bytes used.`, 'ok');
+  }),
+);
+
+$('btn-macro-write').addEventListener('click', () =>
+  withBusy($('btn-macro-write'), async () => {
+    const res = await window.zuoya.macrosWrite(macroState.slots);
+    if (!res.ok) return setStatus($('macro-status'), res.error, 'err');
+    setStatus($('macro-status'), `Wrote macros to the keyboard — ${res.data.used}/${res.data.size} bytes.`, 'ok');
+  }),
+);
+
+$('btn-macro-reset').addEventListener('click', () =>
+  withBusy($('btn-macro-reset'), async () => {
+    const res = await window.zuoya.macrosReset();
+    if (!res.ok) return setStatus($('macro-status'), res.error, 'err');
+    macroState.slots = macroState.slots.map(() => []);
+    renderSteps();
+    setStatus($('macro-status'), `Cleared all ${res.data.count} macros on the keyboard.`, 'ok');
+  }),
+);
+
+// ---------- Lighting ----------
+const LIGHT_FIELDS = ['effect', 'brightness', 'speed', 'hue', 'sat'];
+const lighting = { loaded: false, debounce: null };
+
+// HSV(0-255 each) -> CSS rgb(), for the color-preview swatch. Value is pinned to
+// full so the swatch shows hue/sat even when the keyboard brightness is low.
+function hsvToCss(h, s) {
+  const H = (h / 255) * 360, S = s / 255, V = 1;
+  const c = V * S, x = c * (1 - Math.abs(((H / 60) % 2) - 1)), m = V - c;
+  const [r, g, b] = H < 60 ? [c, x, 0] : H < 120 ? [x, c, 0] : H < 180 ? [0, c, x]
+    : H < 240 ? [0, x, c] : H < 300 ? [x, 0, c] : [c, 0, x];
+  const to = (n) => Math.round((n + m) * 255);
+  return `rgb(${to(r)}, ${to(g)}, ${to(b)})`;
+}
+
+function reflectLight(values) {
+  for (const f of LIGHT_FIELDS) {
+    if (values[f] == null) continue;
+    $(f).value = values[f];
+    $(`${f}-val`).textContent = values[f];
+  }
+  $('light-swatch').style.background = hsvToCss(Number($('hue').value), Number($('sat').value));
+}
+
+async function ensureLighting() {
+  if (lighting.loaded) return;
+  lighting.loaded = true;
+  // Try to load current values, but a disconnected board shouldn't block the UI.
+  const res = await window.zuoya.lightingRead();
+  if (res.ok) {
+    reflectLight(res.data);
+    setStatus($('light-status'), 'Loaded current lighting from the keyboard.', 'ok');
+  } else {
+    setStatus($('light-status'), `Couldn’t read lighting: ${res.error}`, 'err');
+  }
+}
+
+// Push one field live as the slider moves (debounced so we don't flood HID).
+function wireLightSlider(field) {
+  const input = $(field);
+  input.addEventListener('input', () => {
+    $(`${field}-val`).textContent = input.value;
+    if (field === 'hue' || field === 'sat') {
+      $('light-swatch').style.background = hsvToCss(Number($('hue').value), Number($('sat').value));
+    }
+    clearTimeout(lighting.debounce);
+    lighting.debounce = setTimeout(async () => {
+      const patch = { [field]: Number(input.value) };
+      const res = await window.zuoya.lightingSet(patch);
+      if (!res.ok) setStatus($('light-status'), res.error, 'err');
+      else setStatus($('light-status'), `Set ${field} → ${input.value} (live).`, 'ok');
+    }, 60);
+  });
+}
+LIGHT_FIELDS.forEach(wireLightSlider);
+
+$('btn-light-read').addEventListener('click', () =>
+  withBusy($('btn-light-read'), async () => {
+    const res = await window.zuoya.lightingRead();
+    if (!res.ok) return setStatus($('light-status'), res.error, 'err');
+    reflectLight(res.data);
+    setStatus($('light-status'), 'Loaded current lighting from the keyboard.', 'ok');
+  }),
+);
+
+$('btn-light-save').addEventListener('click', () =>
+  withBusy($('btn-light-save'), async () => {
+    const res = await window.zuoya.lightingSave();
+    if (!res.ok) return setStatus($('light-status'), res.error, 'err');
+    setStatus($('light-status'), 'Saved to keyboard flash — survives a replug.', 'ok');
+  }),
+);
+
+// ---------- Profiles ----------
+const profiles = { loaded: false };
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString();
+}
+
+function renderProfiles(list) {
+  const host = $('profile-list');
+  host.innerHTML = '';
+  if (!list.length) {
+    host.innerHTML = '<li class="profile-empty muted">No profiles yet. Set up your keymap and lighting, then “Save current”.</li>';
+    return;
+  }
+  for (const p of list) {
+    const li = document.createElement('li');
+    li.className = 'profile-row';
+    const meta = p.broken
+      ? '<span class="err">unreadable file</span>'
+      : `${p.layerCount ?? '?'} layers · ${p.hasLighting ? 'with RGB' : 'keymap only'}${p.created ? ' · ' + fmtDate(p.created) : ''}`;
+    li.innerHTML =
+      `<div class="profile-info"><span class="profile-name">${p.name}</span>` +
+      `<span class="muted profile-meta">${meta}</span></div>` +
+      `<div class="profile-actions">` +
+      `<button class="apply" ${p.broken ? 'disabled' : ''}>Apply</button>` +
+      `<button class="ghost export" ${p.broken ? 'disabled' : ''}>Export</button>` +
+      `<button class="ghost danger del">Delete</button></div>`;
+    li.querySelector('.apply')?.addEventListener('click', (e) => applyProfile(e.target, p));
+    li.querySelector('.export')?.addEventListener('click', () => exportProfile(p));
+    li.querySelector('.del').addEventListener('click', () => deleteProfile(p));
+    host.appendChild(li);
+  }
+}
+
+async function refreshProfiles(list) {
+  if (!list) {
+    const res = await window.zuoya.profilesList();
+    if (!res.ok) return setStatus($('profile-status'), res.error, 'err');
+    list = res.data;
+  }
+  renderProfiles(list);
+}
+
+async function ensureProfiles() {
+  if (profiles.loaded) return;
+  profiles.loaded = true;
+  await refreshProfiles();
+}
+
+$('btn-profile-save').addEventListener('click', () =>
+  withBusy($('btn-profile-save'), async () => {
+    const name = $('profile-name').value.trim();
+    if (!name) return setStatus($('profile-status'), 'Give the profile a name first.', 'err');
+    setStatus($('profile-status'), `Reading the keyboard to save “${name}”…`);
+    const res = await window.zuoya.profilesSave(name);
+    if (!res.ok) return setStatus($('profile-status'), res.error, 'err');
+    $('profile-name').value = '';
+    renderProfiles(res.data.profiles);
+    setStatus($('profile-status'), `Saved “${name}”.`, 'ok');
+  }),
+);
+
+async function applyProfile(btn, p) {
+  await withBusy(btn, async () => {
+    setStatus($('profile-status'), `Writing “${p.name}” to the keyboard…`);
+    const res = await window.zuoya.profilesApply(p.file);
+    if (!res.ok) return setStatus($('profile-status'), res.error, 'err');
+    const light = res.data.lightingApplied ? ' + RGB' : '';
+    setStatus($('profile-status'), `Applied “${res.data.name}” — ${res.data.keymap} keys${light} written to the keyboard.`, 'ok');
+  });
+}
+
+async function exportProfile(p) {
+  const res = await window.zuoya.profilesExport(p.file);
+  if (!res.ok) return setStatus($('profile-status'), res.error, 'err');
+  if (res.data.canceled) return;
+  setStatus($('profile-status'), `Exported “${p.name}” → ${res.data.path}`, 'ok');
+}
+
+async function deleteProfile(p) {
+  const res = await window.zuoya.profilesDelete(p.file);
+  if (!res.ok) return setStatus($('profile-status'), res.error, 'err');
+  renderProfiles(res.data.profiles);
+  setStatus($('profile-status'), `Deleted “${p.name}”.`, 'ok');
+}
+
+$('btn-profile-import').addEventListener('click', () =>
+  withBusy($('btn-profile-import'), async () => {
+    const res = await window.zuoya.profilesImport();
+    if (!res.ok) return setStatus($('profile-status'), res.error, 'err');
+    if (res.data.canceled) return;
+    renderProfiles(res.data.profiles);
+    setStatus($('profile-status'), 'Imported a profile. Click Apply to write it to the keyboard.', 'ok');
   }),
 );
 

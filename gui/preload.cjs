@@ -14,6 +14,21 @@ contextBridge.exposeInMainWorld('zuoya', {
   keymapLayout: () => ipcRenderer.invoke('keymap:layout'),
   keymapRead: () => ipcRenderer.invoke('keymap:read'),
   keymapWriteKey: (edit) => ipcRenderer.invoke('keymap:writeKey', edit),
+  // Dynamic macros
+  macrosRead: () => ipcRenderer.invoke('macros:read'),
+  macrosWrite: (macros) => ipcRenderer.invoke('macros:write', { macros }),
+  macrosReset: () => ipcRenderer.invoke('macros:reset'),
+  // RGB lighting (global effect/brightness/speed/color)
+  lightingRead: () => ipcRenderer.invoke('lighting:read'),
+  lightingSet: (patch) => ipcRenderer.invoke('lighting:set', patch),
+  lightingSave: () => ipcRenderer.invoke('lighting:save'),
+  // Profiles (keymap + lighting snapshots)
+  profilesList: () => ipcRenderer.invoke('profiles:list'),
+  profilesSave: (name) => ipcRenderer.invoke('profiles:save', { name }),
+  profilesApply: (file) => ipcRenderer.invoke('profiles:apply', { file }),
+  profilesDelete: (file) => ipcRenderer.invoke('profiles:delete', { file }),
+  profilesExport: (file) => ipcRenderer.invoke('profiles:export', { file }),
+  profilesImport: () => ipcRenderer.invoke('profiles:import'),
   // Live screen widgets
   widgetsList: () => ipcRenderer.invoke('widgets:list'),
   widgetsPreview: (id) => ipcRenderer.invoke('widgets:preview', { id }),

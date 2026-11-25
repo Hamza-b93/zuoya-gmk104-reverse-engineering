@@ -57,12 +57,20 @@ Tauri was the original recommendation here; it was not chosen. GTK4/libadwaita w
 - **A2 — keymap editor**: ✅ UI built — full board rendered from the VIA KLE layout (`src/layout.js`),
   per-layer, click-to-pick keycode, write via `set_buffer` with read-back confirm. Write path
   **verified on hardware** (single-cell Esc→Z→Esc round trip). Remaining: confirm a remap survives
-  a replug (persisted to flash, not just RAM).
+  a replug (persisted to flash, not just RAM). ✅ **Macros** added — a **Macros** tab + VIA
+  dynamic-macro codec (`src/macros.js`: text / tap / hold / release / delay steps, byte-budget
+  guard, offline-tested in `test-macros.js`). Macro support is **unverified on this firmware** (the
+  stock VIA emulation may not implement the macro commands; the UI degrades gracefully if not).
 - **A3 — screen tool**: ✅ device write + orientation verified; ✅ image import/decode done
   (`src/image.js`, `upload-image.js` CLI + in-app upload). Still: GIF animation and a preview canvas.
-- **A4 — RGB + polish + packaging**: RGB scope decided (global effect/brightness/speed/color only,
-  not yet wired in the UI). ✅ Packaging set up — electron-builder (AppImage verified; Snap/Flatpak
-  via CI on a `v*` tag). Profiles not started.
+- **A4 — RGB + polish + packaging**: ✅ RGB wired into the UI — a **Lighting** tab with live
+  effect/brightness/speed/hue/sat sliders + color-preview swatch over VIA custom channel 3
+  (`src/lighting.js`, `set-light.js` CLI), read-back and "Save to keyboard" (persist to flash).
+  ✅ **Profiles** built — a **Profiles** tab that snapshots the full keymap (all layers) + lighting
+  to portable JSON and re-applies it in one click, with import/export (`src/profiles.js`). Codec +
+  capture/apply unit-tested offline (`test-lighting.js`, `test-profiles.js`). ✅ Packaging set up —
+  electron-builder (AppImage verified; Snap/Flatpak via CI on a `v*` tag). **Still to verify on
+  hardware**: the channel-3 effect index range and that lighting/profile writes persist across a replug.
 - **A5 — widen hardware support**: ✅ started. Device registry (`gui/src/registry.js`) + a read-only
   diagnostics dump (`gui/doctor.js`) + a GitHub issue form so owners of other VIA keyboards can
   request support. Keymap generalizes by usage page; the screen tool needs per-board confirmation.

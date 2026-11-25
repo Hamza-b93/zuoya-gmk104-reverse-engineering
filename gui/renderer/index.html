@@ -15,6 +15,9 @@
     <nav class="tabs">
       <button class="tab active" data-view="device">Device &amp; Screen</button>
       <button class="tab" data-view="keymap">Keymap</button>
+      <button class="tab" data-view="macros">Macros</button>
+      <button class="tab" data-view="lighting">Lighting</button>
+      <button class="tab" data-view="profiles">Profiles</button>
       <button class="tab" data-view="widgets">Screen widgets</button>
     </nav>
 
@@ -87,6 +90,100 @@
             <span id="raw-hint" class="muted">any 16-bit VIA code, e.g. <code>0x5201</code> = MO(1)</span>
           </div>
           <div id="picker" class="picker"></div>
+        </section>
+      </div>
+
+      <!-- ============ MACROS ============ -->
+      <div id="view-macros" class="view">
+        <section class="card">
+          <div class="card-head">
+            <h2>Macros</h2>
+            <div class="controls">
+              <span id="macro-slots" class="layer-tabs"></span>
+              <button id="btn-macro-read">Read from keyboard</button>
+            </div>
+          </div>
+          <div id="macro-status" class="status">Read the keyboard to load its macro slots. Each macro is a sequence of typed text, key taps/holds, and delays.</div>
+          <div id="macro-editor" class="macro-editor hidden">
+            <div class="macro-steps-head">
+              <span id="macro-target" class="tag">Macro 0</span>
+              <span id="macro-budget" class="muted"></span>
+            </div>
+            <ul id="macro-steps" class="macro-steps"></ul>
+            <div class="macro-add">
+              <span class="muted">Add step:</span>
+              <button class="ghost" data-add="text">Text</button>
+              <button class="ghost" data-add="tap">Tap</button>
+              <button class="ghost" data-add="down">Hold ↓</button>
+              <button class="ghost" data-add="up">Release ↑</button>
+              <button class="ghost" data-add="delay">Delay</button>
+            </div>
+            <div class="macro-actions">
+              <button id="btn-macro-write">Write to keyboard</button>
+              <button id="btn-macro-reset" class="ghost danger">Reset all macros</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============ LIGHTING ============ -->
+      <div id="view-lighting" class="view">
+        <section class="card">
+          <div class="card-head">
+            <h2>RGB lighting</h2>
+            <div class="controls">
+              <button id="btn-light-read" class="ghost">Read from keyboard</button>
+              <button id="btn-light-save">Save to keyboard</button>
+            </div>
+          </div>
+          <div id="light-status" class="status">Global effect, brightness, speed and color. Read the keyboard to load its current values.</div>
+          <div class="light-grid">
+            <div class="light-controls">
+              <label class="slider-row">
+                <span class="slider-label">Effect <em id="effect-val">0</em></span>
+                <input id="effect" type="range" min="0" max="40" value="0" />
+              </label>
+              <label class="slider-row">
+                <span class="slider-label">Brightness <em id="brightness-val">0</em></span>
+                <input id="brightness" type="range" min="0" max="255" value="0" />
+              </label>
+              <label class="slider-row">
+                <span class="slider-label">Speed <em id="speed-val">0</em></span>
+                <input id="speed" type="range" min="0" max="255" value="0" />
+              </label>
+              <label class="slider-row">
+                <span class="slider-label">Hue <em id="hue-val">0</em></span>
+                <input id="hue" type="range" min="0" max="255" value="0" />
+              </label>
+              <label class="slider-row">
+                <span class="slider-label">Saturation <em id="sat-val">0</em></span>
+                <input id="sat" type="range" min="0" max="255" value="0" />
+              </label>
+            </div>
+            <div class="light-swatch-wrap">
+              <div id="light-swatch" class="light-swatch"></div>
+              <span class="muted">color preview</span>
+            </div>
+          </div>
+          <p class="muted light-note">Changes apply live as you drag. <strong>Save to keyboard</strong> persists them to flash so they survive a replug. Effect is a firmware mode index — step through it to find the modes your board has.</p>
+        </section>
+      </div>
+
+      <!-- ============ PROFILES ============ -->
+      <div id="view-profiles" class="view">
+        <section class="card">
+          <div class="card-head">
+            <h2>Profiles</h2>
+            <button id="btn-profile-import" class="ghost">Import…</button>
+          </div>
+          <div id="profile-status" class="status">A profile saves the whole keymap (all layers) plus RGB lighting, so you can switch setups in one click.</div>
+          <div class="raw-row">
+            <label>Name
+              <input id="profile-name" type="text" placeholder="e.g. gaming" autocomplete="off" spellcheck="false" />
+            </label>
+            <button id="btn-profile-save">Save current</button>
+          </div>
+          <ul id="profile-list" class="profile-list"></ul>
         </section>
       </div>
 

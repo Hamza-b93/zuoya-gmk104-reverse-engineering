@@ -12,6 +12,7 @@
     "handshake": "node test-handshake.js",
     "upload": "node upload-image.js",
     "write-key": "node write-key.js",
+    "set-light": "node set-light.js",
     "doctor": "node doctor.js",
     "game": "node game-screen.js",
     "widgets": "node screen-widgets.js",
@@ -20,6 +21,9 @@
     "test:layout": "node --test test-layout.js",
     "test:game": "node --test test-game.js",
     "test:widgets": "node --test test-widgets.js",
+    "test:lighting": "node --test test-lighting.js",
+    "test:profiles": "node --test test-profiles.js",
+    "test:macros": "node --test test-macros.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --linux AppImage",
     "dist:all": "electron-builder --linux AppImage snap flatpak"

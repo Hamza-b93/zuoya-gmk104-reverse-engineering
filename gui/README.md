@@ -32,8 +32,11 @@ app registry-driven so it supports boards beyond the GMK104 (see "Next" at the b
 | Image → screen CLI + decoder (`src/image.js`, `upload-image.js`) | ✅ `npm run upload -- photo.png`; offline test `npm run test:image`. |
 | Keymap-grid editor UI (read → click → `set_buffer` write-back) | ✅ built: full board from the VIA JSON, per-layer, keycode picker, write with read-back confirm. Write path **verified on hardware** (`0,0` Esc→Z→Esc round trip, read-back confirmed). |
 | Headless write check (`write-key.js`) | ✅ `npm run write-key -- <layer> <row> <col> [code]` — read a cell, or write + confirm, no GUI. |
+| Macros editor (`src/macros.js`) | ✅ **Macros** tab: VIA dynamic macros as text / tap / hold / release / delay steps, with a byte-budget guard, write + reset-all. Codec tested offline (`npm run test:macros`). **Unverified on hardware** — reports "no macro support" if the stock firmware doesn't implement the macro commands. |
 | KLE layout parser (`src/layout.js`) | ✅ parses the VIA definition; offline test `npm run test:layout`. |
 | Diagnostics dump (`doctor.js`) + keyboard registry (`src/registry.js`) | ✅ `npm run doctor` writes a redacted report for issue-based board support. |
+| RGB lighting (`src/lighting.js`, `set-light.js`) | ✅ **Lighting** tab + CLI: effect/brightness/speed/hue/sat over VIA custom channel 3, live sliders, read-back + save-to-flash. Codec tested offline (`npm run test:lighting`). Not yet exercised on hardware. |
+| Profiles (`src/profiles.js`) | ✅ **Profiles** tab: snapshot the full keymap (all layers) + lighting to portable JSON, re-apply in one click, import/export. Capture/apply tested offline (`npm run test:profiles`). |
 | Packaging (AppImage / Snap / Flatpak) | ✅ electron-builder config + CI release workflow. AppImage build verified; Snap/Flatpak via CI. |
 | Live game stats on the screen (Dota 2) | ✅ pipeline built + offline-verified (GSI listen → parse → render → codec frame). Device streaming not yet run on hardware. `npm run game`. |
 | Screen widgets (clock, system monitor, rotation) | ✅ GUI tab + `npm run widgets`; live previews, start/stop/rotate. Streams host data to the panel. Device streaming not yet run on hardware. |
@@ -49,7 +52,10 @@ gui/
 ├── renderer/         # UI: index.html + style.css + renderer.js (talks only to window.zuoya)
 ├── src/
 │   ├── device.js     # enumerate GMK104 hidraw interfaces, open by usage page
-│   ├── via.js        # VIA codec: protocol version, layer count, get/set keymap buffer
+│   ├── via.js        # VIA codec: protocol version, layer count, get/set keymap + macro buffer
+│   ├── macros.js     # VIA dynamic-macro codec (byte format <-> editable step list)
+│   ├── lighting.js   # VIA custom-channel RGB codec (effect/brightness/speed/color)
+│   ├── profiles.js   # capture/apply a keymap + lighting snapshot (portable JSON)
 │   ├── keycodes.js   # keycode <-> label map + grouped picker palette
 │   ├── layout.js     # parse the VIA KLE layout -> positioned keys + matrix; keymap offsets
 │   ├── registry.js   # known-keyboard registry (VID/PID + usage pages); generalization seed
@@ -67,6 +73,7 @@ gui/
 ├── doctor.js         # read-only diagnostic dump of HID keyboards (npm run doctor)
 ├── upload-image.js   # CLI: upload an image file to the screen (npm run upload)
 ├── write-key.js      # CLI: read/write one keymap cell with read-back (npm run write-key)
+├── set-light.js      # CLI: read/set RGB lighting + save to flash (npm run set-light)
 ├── build/icon.png    # app icon for electron-builder
 ├── test-handshake.js # proves comms + reads back real keys from the keyboard
 ├── test-*.js         # offline tests (npm run test:screen / test:image / test:layout)
@@ -82,7 +89,7 @@ npm install
 npm start        # launches the Electron window
 ```
 
-Three tabs:
+Six tabs:
 - **Device & Screen** — **Detect** (lists the hidraw interfaces by usage page) and a **Screen**
   uploader: drag an image onto the card (or **Choose image…**), see a 180×180 preview of exactly
   what the panel will show (updates live with the **Fit** toggle: cover/crop or contain/letterbox),
@@ -90,6 +97,16 @@ Three tabs:
 - **Keymap** — renders the full board from the VIA JSON, one layer at a time. **Read from keyboard**
   pulls every layer's keycodes; click a key, pick a new keycode, and it's written over VIA
   (`set_buffer`) and read back to confirm.
+- **Macros** — VIA dynamic macros. **Read from keyboard** loads the macro slots; build each one as a
+  sequence of steps (type literal **Text**, **Tap** / **Hold** / **Release** a key, or wait a
+  **Delay** in ms), watch the byte budget, then **Write to keyboard**. **Reset all** clears them.
+  (If the stock firmware doesn't implement the macro commands, the tab says so.)
+- **Lighting** — global RGB over VIA custom channel 3: live sliders for effect index, brightness,
+  speed, hue and saturation (with a color-preview swatch). **Read from keyboard** loads the current
+  values; changes apply live; **Save to keyboard** persists them to flash. Also headless via
+  `npm run set-light`.
+- **Profiles** — snapshot the whole keymap (every layer) plus lighting into a named profile, then
+  **Apply** it in one click to switch setups. Import/export profiles as portable JSON.
 - **Screen widgets** — live content for the panel: a clock, a system monitor (CPU/RAM/temp/uptime),
   and a rotate-all mode. Each tile shows a live preview; **Start** streams it to the screen until you
   **Stop**. Same widgets are available headless via `npm run widgets`.

@@ -7,6 +7,11 @@ export const VIA_CMD = {
   GET_KEYBOARD_VALUE: 0x02,
   DYNAMIC_KEYMAP_GET_KEYCODE: 0x04, // NOTE: non-standard on this firmware; use the buffer cmds
   DYNAMIC_KEYMAP_SET_KEYCODE: 0x05,
+  DYNAMIC_KEYMAP_MACRO_GET_COUNT: 0x0c,
+  DYNAMIC_KEYMAP_MACRO_GET_BUFFER_SIZE: 0x0d,
+  DYNAMIC_KEYMAP_MACRO_GET_BUFFER: 0x0e,
+  DYNAMIC_KEYMAP_MACRO_SET_BUFFER: 0x0f,
+  DYNAMIC_KEYMAP_MACRO_RESET: 0x10,
   DYNAMIC_KEYMAP_GET_LAYER_COUNT: 0x11,
   DYNAMIC_KEYMAP_GET_BUFFER: 0x12,
   DYNAMIC_KEYMAP_SET_BUFFER: 0x13,
@@ -19,7 +24,7 @@ const REPORT_LEN = 32; // VIA RAW_EPSIZE
 
 // Send one VIA command and read the reply. `args` are the bytes after the
 // command id. Returns the 32-byte reply as a Buffer (reply[0] echoes the cmd).
-function transact(dev, cmd, args = [], timeoutMs = 500) {
+export function transact(dev, cmd, args = [], timeoutMs = 500) {
   const payload = Buffer.alloc(REPORT_LEN, 0);
   payload[0] = cmd;
   for (let i = 0; i < args.length && i + 1 < REPORT_LEN; i++) payload[i + 1] = args[i];
@@ -80,11 +85,64 @@ export function readKeymapBuffer(dev, totalBytes) {
   return out;
 }
 
+// Write a whole keymap buffer back to the device in 28-byte chunks (symmetric
+// to readKeymapBuffer). `buf` is big-endian 16-bit keycodes, layer-major.
+export function writeKeymapBuffer(dev, buf) {
+  for (let off = 0; off < buf.length; off += BUFFER_CHUNK) {
+    const n = Math.min(BUFFER_CHUNK, buf.length - off);
+    setBuffer(dev, off, buf.subarray(off, off + n));
+  }
+}
+
 // Decode a buffer of big-endian 16-bit keycodes into an array of numbers.
 export function decodeKeycodes(buf) {
   const kc = [];
   for (let i = 0; i + 1 < buf.length; i += 2) kc.push((buf[i] << 8) | buf[i + 1]);
   return kc;
+}
+
+// Inverse of decodeKeycodes: pack an array of 16-bit codes into a big-endian Buffer.
+export function encodeKeycodes(codes) {
+  const buf = Buffer.alloc(codes.length * 2);
+  for (let i = 0; i < codes.length; i++) buf.writeUInt16BE(codes[i] & 0xffff, i * 2);
+  return buf;
+}
+
+// --- Dynamic macros ---
+// Number of macro slots the firmware exposes. Reply: [0x0c, count].
+export function getMacroCount(dev) {
+  return transact(dev, VIA_CMD.DYNAMIC_KEYMAP_MACRO_GET_COUNT)[1];
+}
+
+// Total bytes of the macro buffer. Reply: [0x0d, size_hi, size_lo].
+export function getMacroBufferSize(dev) {
+  const r = transact(dev, VIA_CMD.DYNAMIC_KEYMAP_MACRO_GET_BUFFER_SIZE);
+  return (r[1] << 8) | r[2];
+}
+
+// Read the whole macro buffer in 28-byte chunks (same framing as the keymap buffer).
+export function readMacroBuffer(dev, totalBytes) {
+  const out = Buffer.alloc(totalBytes);
+  for (let off = 0; off < totalBytes; off += BUFFER_CHUNK) {
+    const n = Math.min(BUFFER_CHUNK, totalBytes - off);
+    const r = transact(dev, VIA_CMD.DYNAMIC_KEYMAP_MACRO_GET_BUFFER, [(off >> 8) & 0xff, off & 0xff, n]);
+    r.subarray(4, 4 + n).copy(out, off);
+  }
+  return out;
+}
+
+// Write a macro buffer back in 28-byte chunks.
+export function writeMacroBuffer(dev, buf) {
+  for (let off = 0; off < buf.length; off += BUFFER_CHUNK) {
+    const n = Math.min(BUFFER_CHUNK, buf.length - off);
+    const chunk = buf.subarray(off, off + n);
+    transact(dev, VIA_CMD.DYNAMIC_KEYMAP_MACRO_SET_BUFFER, [(off >> 8) & 0xff, off & 0xff, n, ...chunk]);
+  }
+}
+
+// Clear all macros on the device.
+export function resetMacros(dev) {
+  transact(dev, VIA_CMD.DYNAMIC_KEYMAP_MACRO_RESET);
 }
 
 // Convenience: open the VIA interface, run `fn(dev)`, always close.
