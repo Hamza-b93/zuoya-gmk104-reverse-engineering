@@ -90,6 +90,39 @@ differs in detail, the flasher needs small adjustments, or you fall back to the 
 ### 5. Battery / misc
 - Battery ADC likely `PD1` (platform default); confirm during bring-up.
 
+## 2.4 GHz and the screen — feasibility
+
+Both are the hardest pieces and both are **excluded from a first ZMK bring-up**. Their
+long-term outlook differs sharply:
+
+### 2.4 GHz dongle — effectively not feasible
+- The dongle is a **proprietary RF link** between the keyboard's Telink radio and a
+  *separate MCU inside the USB dongle*. ZMK/Zephyr wireless is **BLE-only**; there is no
+  open-source proprietary-2.4G stack for Telink (or any vendor's gaming dongle) anywhere
+  public.
+- Supporting it would be a **dual-device RE project**: reverse the private RF protocol
+  (channel hopping, pairing, packet format, any crypto), implement it on the keyboard side,
+  **and** replace the dongle's firmware too. The stock dongle only talks to stock firmware.
+- rainy75 — who reverse-engineered the whole platform — **explicitly does not port 2.4G**.
+- **Verdict:** treat 2.4G as lost once ZMK is flashed; **BLE replaces it**. If 2.4G is
+  required, stay on stock firmware.
+
+### The screen — possible, but a separate sub-project
+- ZMK **does** have a display subsystem (Zephyr display driver + LVGL; it already drives
+  SSD1306 / Nice!View). The GMK104's panel is a **~180×180 color TFT**, almost certainly an
+  SPI controller of the ST7789 / GC9A01 class — so a driver path exists.
+- Required work: (1) **teardown** to identify the exact controller + its SPI/DC/RESET/
+  backlight pins, (2) use or write a **Zephyr display driver** + devicetree wiring, (3) ZMK
+  then renders **status widgets** (layer, battery, BT profile, caps-lock).
+- **Caveats:** you get ZMK's own widgets, **not** the stock "upload a GIF" flow (that is
+  tied to the stock firmware's proprietary HID protocol and won't exist under ZMK); and
+  there is **no rainy75 reference** (it has no screen), so it is net-new per-panel work.
+- **Verdict:** feasible as a follow-on effort, gated on a hardware teardown; lower priority
+  than keys + RGB.
+
+**Net result of a ZMK'd GMK104:** USB + Bluetooth LE + per-key RGB, full remapping via ZMK
+Studio — **no 2.4G, no screen** (the screen can be added later).
+
 ## Phased plan
 
 1. **Verify the flash path** (desk work): diff the GMK104 OTA protocol vs rainy75's flasher.
