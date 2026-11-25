@@ -40,10 +40,17 @@ From the shared Evision platform (rainy75 `docs/gpio-matrix.md`): cols in order
 GMK104 layout uses **14 columns (0–13)** → `PE4-7, PA0-4, PB1-5`. RGB data is `PB7` (PSPI
 MOSI), LED power gate `PC2` — both platform constants.
 
-## Still not resolved statically
+## RGB LED count — estimated 105
 
-- **RGB `chain-length`** (per-key LED count) — the naive constant search was inconclusive;
-  needs the DMA-length in the PSPI/WS2812 send routine, or a live probe. Placeholder `107`.
+Static constant-search was inconclusive (`.byte` misdecodes inject noise; weak activity
+around 103–104 near the RGB/matrix code). Resolved instead by geometry + physical count:
+the VIA layout has **107 positions − 2 encoder half-keys = 105 switch positions**, and the
+owner physically counted **≥103** per-key LEDs (one per switch hole, no separate underglow).
+`chain-length` is set to **105** (safe-high — extra entries are ignored; too-low leaves keys
+dark); trim by 1 at RGB bring-up if the last keys misalign.
+
+## Still open
+
 - **Duplicated cell `RC(7,13)`** (ESC vs the tall numpad key) — a VIA-JSON artifact; resolve
   by probing which physical key reads that cell.
 
