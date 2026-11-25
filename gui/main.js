@@ -12,7 +12,7 @@ import {
 } from './src/via.js';
 import { keycodeName, KEYCODE_GROUPS } from './src/keycodes.js';
 import { buildLayout, keyOffset } from './src/layout.js';
-import { loadImage } from './src/image.js';
+import { loadImage, previewDataUrl } from './src/image.js';
 import { uploadImage } from './src/screen-device.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -85,19 +85,28 @@ handle('via:handshake', () =>
   }),
 );
 
-// --- Screen upload: pick a file, decode, push ---
-handle('screen:pickAndUpload', async (opts = {}) => {
+// --- Screen upload: pick → preview → push ---
+// Open a file dialog; return the chosen path (no decode yet).
+handle('screen:pickFile', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     title: 'Pick an image for the 180×180 screen',
     properties: ['openFile'],
     filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }],
   });
   if (canceled || filePaths.length === 0) return { canceled: true };
+  return { canceled: false, path: filePaths[0] };
+});
 
-  const path = filePaths[0];
-  const rgb = await loadImage(path, { fit: opts.fit ?? 'cover', background: opts.background ?? '#000000' });
+// Render the exact 180×180 as a PNG data URL (what the panel will show).
+handle('screen:preview', ({ path, fit = 'cover', background = '#000000' }) =>
+  previewDataUrl(path, { fit, background }),
+);
+
+// Decode the given file and push it to the screen.
+handle('screen:uploadPath', async ({ path, fit = 'cover', background = '#000000' }) => {
+  const rgb = await loadImage(path, { fit, background });
   const reports = await uploadImage(rgb);
-  return { canceled: false, path, reports };
+  return { reports, name: path.split(/[\\/]/).pop() };
 });
 
 // --- Keymap editor ---

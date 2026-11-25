@@ -28,7 +28,7 @@ app registry-driven so it supports boards beyond the GMK104 (see "Next" at the b
 | Screen codec (`src/screen.js`) | ✅ ported; matches the captured upload offline (`npm run test:screen`). |
 | Screen device write (`src/screen-device.js`) | ✅ verified on hardware: four-quadrant test pattern (`node send-test-pattern.js`) shows the correct orientation. |
 | Electron shell (window + secure IPC bridge) | ✅ boots; `main.js` + `preload.cjs` + `renderer/`. `npm start`. |
-| App UI — detect device, upload image | ✅ cards wired to the device layer over IPC. |
+| App UI — detect device, screen uploader | ✅ cards wired to the device layer over IPC. Screen uploader has drag-and-drop + a 180×180 live preview (fit toggle) + push. |
 | Image → screen CLI + decoder (`src/image.js`, `upload-image.js`) | ✅ `npm run upload -- photo.png`; offline test `npm run test:image`. |
 | Keymap-grid editor UI (read → click → `set_buffer` write-back) | ✅ built: full board from the VIA JSON, per-layer, keycode picker, write with read-back confirm. Write path **verified on hardware** (`0,0` Esc→Z→Esc round trip, read-back confirmed). |
 | Headless write check (`write-key.js`) | ✅ `npm run write-key -- <layer> <row> <col> [code]` — read a cell, or write + confirm, no GUI. |
@@ -79,8 +79,10 @@ npm start        # launches the Electron window
 ```
 
 Two tabs:
-- **Device & Screen** — **Detect** (lists the hidraw interfaces by usage page) and **Upload image…**
-  (file picker → 180×180 → screen).
+- **Device & Screen** — **Detect** (lists the hidraw interfaces by usage page) and a **Screen**
+  uploader: drag an image onto the card (or **Choose image…**), see a 180×180 preview of exactly
+  what the panel will show (updates live with the **Fit** toggle: cover/crop or contain/letterbox),
+  then **Push to screen**.
 - **Keymap** — renders the full board from the VIA JSON, one layer at a time. **Read from keyboard**
   pulls every layer's keycodes; click a key, pick a new keycode, and it's written over VIA
   (`set_buffer`) and read back to confirm.
@@ -215,8 +217,8 @@ VIA keyboards (usage page `0xFF60`) can often be driven with no code change. To 
    ones with no definition yet. This is what makes the app usable by people with other keyboards.
 2. **Verify a remap survives a replug** (persists to flash, not just RAM) and that there's no VIA
    commit/save step. Keymap write is otherwise hardware-verified. Use `npm run write-key`.
-3. Screen uploader UX in-app: thumbnail/preview before push, drag-and-drop, maybe a live 180×180
-   preview canvas. The decode + device path are done (`src/image.js` → `uploadImage`).
+3. ✅ *Done:* screen uploader UX (drag-and-drop + 180×180 live preview + push). Possible follow-ups:
+   paste-from-clipboard, recent images, and an in-app preview for the live widgets.
 4. Swap the hand-rolled `renderer/style.css` for a real Tailwind build step (declared stack).
 5. Make udev access work without manual permission changes (the rule is installed; the ACL needs investigating).
 6. RGB control via VIA channel 3 only (brightness, effect, speed, global color). A probe of channels 0–7 and value IDs 1–5 found no per-key channel, so per-key/ARGB editing is out of scope.

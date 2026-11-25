@@ -21,3 +21,14 @@ export async function loadImage(path, { fit = 'cover', background = '#000000' } 
   }
   return data; // Buffer of RGB888, row-major, top-left origin
 }
+
+// Render the exact 180x180 the screen would show, as a PNG data URL for preview.
+// Same resize/flatten as loadImage, so preview === what gets pushed.
+export async function previewDataUrl(path, { fit = 'cover', background = '#000000' } = {}) {
+  const png = await sharp(path)
+    .resize(SCREEN_SIZE, SCREEN_SIZE, { fit, background })
+    .flatten({ background })
+    .png()
+    .toBuffer();
+  return `data:image/png;base64,${png.toString('base64')}`;
+}

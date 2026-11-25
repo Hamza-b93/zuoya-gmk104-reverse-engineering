@@ -51,17 +51,74 @@ $('btn-detect').addEventListener('click', () =>
   }),
 );
 
-// ---------- Screen upload ----------
-$('btn-upload').addEventListener('click', () =>
-  withBusy($('btn-upload'), async () => {
-    setStatus($('screen-status'), 'Decoding and uploading…');
-    const res = await window.zuoya.pickAndUpload({ fit: $('fit').value });
+// ---------- Screen upload (pick/drop → preview → push) ----------
+const screen = { path: null, name: '' };
+
+async function loadPreview(path, name) {
+  screen.path = path;
+  screen.name = name || path.split(/[\\/]/).pop();
+  const res = await window.zuoya.screenPreview({ path, fit: $('fit').value });
+  if (!res.ok) {
+    $('btn-push').disabled = true;
+    return setStatus($('screen-status'), res.error, 'err');
+  }
+  const img = $('preview');
+  img.src = res.data;
+  img.hidden = false;
+  $('preview-placeholder').hidden = true;
+  $('btn-push').disabled = false;
+  setStatus($('screen-status'), `Ready: ${screen.name} — press “Push to screen”.`);
+}
+
+$('btn-pick').addEventListener('click', () =>
+  withBusy($('btn-pick'), async () => {
+    const res = await window.zuoya.pickFile();
     if (!res.ok) return setStatus($('screen-status'), res.error, 'err');
-    if (res.data.canceled) return setStatus($('screen-status'), 'Cancelled.');
-    const { path, reports } = res.data;
-    setStatus($('screen-status'), `Uploaded ${path.split('/').pop()} — ${reports} reports sent.`, 'ok');
+    if (res.data.canceled) return;
+    await loadPreview(res.data.path);
   }),
 );
+
+// Re-render the preview when the fit changes (if an image is loaded).
+$('fit').addEventListener('change', () => {
+  if (screen.path) loadPreview(screen.path, screen.name);
+});
+
+$('btn-push').addEventListener('click', () =>
+  withBusy($('btn-push'), async () => {
+    if (!screen.path) return;
+    setStatus($('screen-status'), `Pushing ${screen.name}…`);
+    const res = await window.zuoya.uploadPath({ path: screen.path, fit: $('fit').value });
+    if (!res.ok) return setStatus($('screen-status'), res.error, 'err');
+    setStatus($('screen-status'), `Pushed ${res.data.name} — ${res.data.reports} reports sent.`, 'ok');
+  }),
+);
+
+// Drag and drop onto the dropzone.
+const dropzone = $('dropzone');
+['dragenter', 'dragover'].forEach((e) =>
+  dropzone.addEventListener(e, (ev) => {
+    ev.preventDefault();
+    dropzone.classList.add('dragging');
+  }),
+);
+['dragleave', 'drop'].forEach((e) =>
+  dropzone.addEventListener(e, (ev) => {
+    ev.preventDefault();
+    if (e === 'dragleave' && dropzone.contains(ev.relatedTarget)) return;
+    dropzone.classList.remove('dragging');
+  }),
+);
+dropzone.addEventListener('drop', async (ev) => {
+  const file = ev.dataTransfer?.files?.[0];
+  if (!file) return;
+  if (!/^image\//.test(file.type) && !/\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name)) {
+    return setStatus($('screen-status'), 'That doesn’t look like an image file.', 'err');
+  }
+  const path = window.zuoya.pathForFile(file);
+  if (!path) return setStatus($('screen-status'), 'Could not resolve the dropped file path.', 'err');
+  await loadPreview(path, file.name);
+});
 
 // ---------- Keymap editor ----------
 const UNIT = 40; // px per 1u keycap

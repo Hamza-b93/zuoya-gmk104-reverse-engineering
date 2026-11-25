@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
-    <title>ZUOYA GMK104 Control</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:" />
+    <title>Keeb Control</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -39,10 +39,23 @@
                   <option value="contain">contain (letterbox)</option>
                 </select>
               </label>
-              <button id="btn-upload">Upload image…</button>
+              <button id="btn-pick" class="ghost">Choose image…</button>
+              <button id="btn-push" disabled>Push to screen</button>
             </div>
           </div>
-          <div id="screen-status" class="status">Pick an image — decoded to 180×180 and pushed to the panel.</div>
+          <div class="screen-body">
+            <div id="dropzone" class="dropzone">
+              <div class="preview-wrap">
+                <img id="preview" class="preview" alt="" hidden />
+                <div id="preview-placeholder" class="preview-placeholder">180×180</div>
+              </div>
+              <div class="drop-hint">
+                <strong>Drag an image here</strong>, or use <em>Choose image…</em><br />
+                It's resized to 180×180 — the preview is exactly what the panel shows.
+              </div>
+            </div>
+          </div>
+          <div id="screen-status" class="status">No image loaded.</div>
         </section>
       </div>
 
