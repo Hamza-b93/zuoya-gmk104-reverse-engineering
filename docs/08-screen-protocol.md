@@ -16,7 +16,7 @@ command sequence are all recovered. Raw evidence is in [`../screen-re/capture/`]
 |---|---|
 | **Resolution** | **180 × 180** (confirmed: the first non-red pixel in the capture is at index **32400 = 180×180**, on a clean row boundary) |
 | **Pixel format** | **RGB565, big-endian** (MSB first) — pure red = word `0xF800` = bytes `F8 00` |
-| **Order** | row-major, top-left origin (exact orientation/mirroring still to be confirmed with an asymmetric test pattern) |
+| **Order** | row-major, top-left origin (confirmed on hardware with a four-quadrant test pattern) |
 | **Framebuffer** | 180×180 = 32400 px = **64 800 bytes**, padded by the tool to **65 536 bytes** (0x10000); only the first 64 800 bytes are displayed |
 
 ## Transport
@@ -75,8 +75,8 @@ byte 5..7   : destination offset   LE24, into the 65 536-byte framebuffer
 byte 8..    : pixel payload        <length> bytes = RGB565-BE, 28 px per full packet
 ```
 
-- Offsets run **0, 56, 112, … 65 520**, step **56**. 1169 packets of 56 bytes + 1 final packet of
-  16 bytes = **1170 pixel packets**, covering all 65 536 bytes.
+- Offsets run **0, 56, 112, … 65 520**, step **56**. 1170 packets of 56 bytes + 1 final packet of
+  16 bytes = **1171 pixel packets**, covering all 65 536 bytes.
 - Payload is the raw framebuffer slice `fb[offset : offset+length]`.
 
 ### Epilogue (1 packet)
@@ -85,7 +85,7 @@ byte 8..    : pixel payload        <length> bytes = RGB565-BE, 28 px per full pa
 |--------|--------|------|
 | `0x02` | `04 02 00 02 00…` | commit / refresh (image appears) |
 
-Total for one image = 5 + 1170 + 1 = **1176** output reports.
+Total for one image = 5 + 1171 + 1 = **1177** output reports (verified against the capture).
 
 ## Building the framebuffer
 
@@ -116,13 +116,15 @@ tshark -r screen.pcapng -Y 'usb.endpoint_address.direction==0 && usb.data_len>0'
        -T fields -e usb.capdata
 ```
 
-## Linux uploader — plan (not yet implemented)
+## Linux uploader — status
 
-A `hidraw` uploader needs no Wine:
+Implemented in `gui/` (Node, no Wine): `src/screen.js` builds the reports and `src/screen-device.js`
+writes them to the `0xFF1C` node. Image decoding (PNG/GIF to RGB888) is not implemented yet. The
+steps below describe the flow the codec follows:
 
 1. **Find the node** — scan `/sys/class/hidraw/*/device/report_descriptor` for usage page `06 1C FF`
-   and VID `320F`; open that `/dev/hidrawX` (`--device` to override). Needs rw (udev rule / chmod).
-2. **Prep image** — load (Pillow), resize to 180×180, encode RGB565-BE row-major, pad to 65 536.
+   and VID `320F`; open that `/dev/hidrawX` (`--device` to override). Needs rw access (see [gui/README.md](../gui/README.md)).
+2. **Prep image** — load, resize to 180×180, encode RGB565-BE row-major, pad to 65 536 (the gui codec takes raw RGB888 and does the encoding).
 3. **Prologue** — emit the 5 wrapper packets (opcodes `01, 06, 02, 23, 01`), recomputing checksums.
 4. **Pixels** — for `offset` in `range(0, 65536, 56)`: build `04 | cksum | 21 | len | offset(LE24) |
    payload` and write; last `len` = 16.
@@ -130,7 +132,7 @@ A `hidraw` uploader needs no Wine:
 
 Caveats: **close the Windows tool / Wine first** (it holds the hidraw handle); tune a small
 inter-write delay if needed; GIF/animation = multiple frames + the opcode-`06` metadata parsed.
-First test should push an **asymmetric** pattern (e.g. 4 colored quadrants) to lock down orientation.
+The orientation test (four colored quadrants, `gui/send-test-pattern.js`) has passed on hardware: row-major, top-left origin.
 
 ## Reverting an uploaded image
 

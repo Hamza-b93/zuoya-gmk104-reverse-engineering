@@ -16,11 +16,13 @@ The hardware/device layer is **done and verified on real hardware**; the Electro
 | VIA keymap **read** (`get_buffer` 0x12) → decodes to real keys | ✅ verified |
 | VIA keymap **write** (`set_buffer` 0x13) | ✅ implemented, not yet exercised |
 | Layer count (= 4) | ✅ |
-| Screen upload protocol (180×180 RGB565-BE) | ✅ fully RE'd ([docs/08](../docs/08-screen-protocol.md)); codec not yet ported here |
+| Screen upload protocol (180×180 RGB565-BE) | ✅ fully RE'd ([docs/08](../docs/08-screen-protocol.md)) |
+| Screen codec (`src/screen.js`) | ✅ ported; matches the captured upload offline (`npm run test:screen`). |
+| Screen device write (`src/screen-device.js`) | ✅ verified on hardware: four-quadrant test pattern (`node send-test-pattern.js`) shows the correct orientation. |
 | Electron window / Tailwind UI | ⬜ not started |
 | Keymap-grid editor UI | ⬜ not started |
 | Screen uploader UI | ⬜ not started |
-| udev rule (no-sudo access) | ⬜ not started (use the chmod below for now) |
+| udev rule (`linux/92-zuoya-via.rules`) | ⚠️ installed to `/etc/udev/rules.d/`, but its `uaccess` ACL was not applied on the test machine. The screen node was opened with `chgrp wheel` + `chmod 0660` instead. |
 
 ## What's here
 
@@ -29,8 +31,15 @@ gui/
 ├── src/
 │   ├── device.js     # enumerate GMK104 hidraw interfaces, open by usage page
 │   ├── via.js        # VIA codec: protocol version, layer count, get/set keymap buffer
-│   └── keycodes.js   # minimal keycode -> label map
+│   ├── keycodes.js   # minimal keycode -> label map
+│   ├── screen.js     # screen codec: RGB888 -> RGB565-BE reports (offline, no I/O)
+│   ├── screen-device.js # write screen reports to the 0xFF1C node
+│   └── image.js      # decode any image file -> 180x180 RGB888 (sharp)
+├── upload-image.js   # CLI: upload an image file to the screen (npm run upload)
 ├── test-handshake.js # proves comms + reads back real keys from the keyboard
+├── test-screen-codec.js # offline codec test (npm run test:screen)
+├── test-image.js     # offline image-decoder test (npm run test:image)
+├── send-test-pattern.js # four-quadrant orientation test on the device
 └── package.json
 ```
 
@@ -39,9 +48,9 @@ gui/
 ```bash
 cd gui
 npm install
-# grant access to the VIA + screen interfaces (resets on replug — see udev note):
-#   find them: ls -l /dev/hidraw*   (match the VIA/screen nodes)
-sudo chmod 666 /dev/hidraw2 /dev/hidraw4     # node numbers vary; VIA=0xFF60, SCREEN=0xFF1C
+# grant access to the VIA + screen interfaces (fallback if the udev ACL isn't applied; resets on replug):
+#   find them: ls -l /dev/hidraw*   (VIA=0xFF60, SCREEN=0xFF1C; node numbers vary)
+sudo chgrp wheel /dev/hidraw2 /dev/hidraw4 && sudo chmod 0660 /dev/hidraw2 /dev/hidraw4
 node test-handshake.js
 ```
 
@@ -54,7 +63,27 @@ layer 0, keys 0-13:
 ```
 
 The hidraw node numbers change across replugs; the code finds the right interface **by usage page**,
-not by node number, so only the `chmod` targets need updating (a udev rule will remove even that).
+not by node number, so only the access targets need updating (the udev rule should remove even that once its ACL applies).
+
+## Test the screen upload
+
+```bash
+npm run test:screen         # offline codec test against the captured Windows-tool upload
+npm run test:image          # offline image-decoder test (decode -> 180x180 RGB888)
+node send-test-pattern.js   # sends a four-quadrant pattern to the keyboard screen
+```
+
+## Upload an image to the screen
+
+```bash
+npm run upload -- path/to/photo.png          # or: node upload-image.js photo.png
+node upload-image.js photo.jpg --fit contain --bg '#101010'
+```
+
+Any format sharp reads (PNG/JPG/WebP/GIF/…) is decoded, resized to 180×180 and uploaded.
+`--fit cover` (default) fills the square and crops; `--fit contain` fits the whole image and
+letterboxes with `--bg`. GIFs upload their first frame (animation is not wired up yet). Close the
+Windows tool / Wine first — it holds the hidraw handle.
 
 ## Notes / gotchas (learned during bring-up)
 
@@ -68,8 +97,8 @@ not by node number, so only the `chmod` targets need updating (a udev rule will 
 
 ## Next (when we resume)
 
-1. udev rule for passwordless access to the `320F` hidraw interfaces.
+1. Make udev access work without manual permission changes (the rule is installed; the ACL needs investigating).
 2. Electron shell wiring `src/` into a window (main ↔ renderer IPC).
 3. Keymap-grid editor from the VIA JSON layout (read → edit → `set_buffer` write).
-4. Screen uploader: port the [screen codec](../screen-re/decode_screen.py) — image → 180×180 → RGB565-BE → upload.
-5. RGB control, profiles, AppImage/Flatpak packaging.
+4. Screen uploader UI: image decoding (PNG/GIF to RGB888) is still to be chosen. The device path (`uploadImage` in `src/screen-device.js`) and orientation are verified.
+5. RGB control via VIA channel 3 only (brightness, effect, speed, global color). A probe of channels 0–7 and value IDs 1–5 found no per-key channel, so per-key/ARGB editing is out of scope. Profiles and AppImage/Flatpak packaging come after that.

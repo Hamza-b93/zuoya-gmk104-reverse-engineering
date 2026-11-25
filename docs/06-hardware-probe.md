@@ -22,7 +22,7 @@ Confirms the GMK104 is the Evision/Telink TLSR9511 platform, same family as `rai
 | 0 | hidraw1 | `…5055.0002` | Boot keyboard (6KRO) | `05 01 09 06` + 64B consumer feature |
 | 1 | hidraw2 | `…5055.0003` | **VIA** | usage page **0xFF60**, usage 0x61, 32B in/out |
 | 2 | hidraw3 | `…5055.0004` | NKRO kbd + system + consumer + mouse **+ OTA** | OTA: usage page **0xFFEF**, **Report ID 5**, 63B in/out/feature |
-| 3 | hidraw4 | `…5055.0005` | Vendor channel (likely screen / "WOB driver") | usage page **0xFF1C**, Report ID 4, 63B out / 7B in |
+| 3 | hidraw4 | `…5055.0005` | Screen image upload (confirmed on hardware) | usage page **0xFF1C**, Report ID 4, 63B out / 7B in |
 
 ### Interface 1 — VIA (confirmed working)
 ```
@@ -54,9 +54,9 @@ report ID 1 is a 120-key **NKRO** bitmap (full N-key rollover available even on 
 c0
 ```
 A fourth proprietary channel not seen in the tool analysis. The large 63-byte output + tiny
-input is consistent with a **bulk push channel** — most likely the **color-screen image
-upload** and/or the proprietary "WOB/RDR driver" config path. Not VIA, not OTA. Would need
-its own RE if the screen is ever targeted (see [04-screen-image-tool.md](04-screen-image-tool.md)).
+input is a **bulk push channel**, and it is the **color-screen image upload**: a full frame
+sent from the codec in `gui/` displays correctly (see [08-screen-protocol.md](08-screen-protocol.md)).
+Not VIA, not OTA.
 
 ## What this verifies
 
@@ -64,7 +64,7 @@ its own RE if the screen is ever targeted (see [04-screen-image-tool.md](04-scre
 - ✅ The OTA flash interface matches rainy75 exactly → the ZMK bootstrap is viable.
 - ✅ NKRO present.
 - ✅ Firmware rev (1.11) and platform (`RDR`/Evision) confirmed on real hardware.
-- 🔍 Identified a 4th channel (`0xFF1C`) as the likely screen/driver path.
+- ✅ 0xFF1C confirmed as the screen image upload channel.
 
 ## Reproduce (read-only)
 

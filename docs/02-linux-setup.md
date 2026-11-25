@@ -29,6 +29,9 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 Unplug/replug the keyboard afterwards. (The rule just grants your user access to the
 `0x320F` HID interfaces — confirmed present in [06-hardware-probe.md](06-hardware-probe.md).)
+On the test machine the rule was installed but its per-user ACL was not applied after replug.
+If the browser still can't open the device, grant access manually as in
+[gui/README.md](../gui/README.md) (`chgrp wheel` + `chmod 0660` on the VIA node).
 
 ### 1b. Load the definition and configure
 
@@ -37,7 +40,8 @@ Unplug/replug the keyboard afterwards. (The rule just grants your user access to
 3. **Settings** (gear) → enable **"Show Design tab"**.
 4. **Design** tab → **Load** → pick `ZUOYA-GMK104-USB.json` from this folder.
 5. **Authorize** the device when the browser prompts (it lists the `0x320F` device).
-6. Go to the **Configure** tab → remap keys, set layers/macros, adjust RGB.
+6. Go to the **Configure** tab → remap keys, set layers/macros, adjust RGB. RGB here is global only
+   (effect, brightness, speed, color); per-key/ARGB is not exposed by this firmware.
 
 Changes persist on the keyboard. If it isn't detected: confirm wired mode, confirm the
 udev rule applied (below), and make sure no other app is holding the HID device.

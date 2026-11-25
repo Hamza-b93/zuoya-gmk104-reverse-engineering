@@ -21,19 +21,20 @@ hardware feature stays intact. This is the host-side "compatibility layer."
 1. **Key remapping** — read/write the keymap, layers, and macros via the **VIA protocol**
    (usage page `0xFF60`, `/dev/hidrawX` = interface 1). The repo's VIA JSON defines the matrix/layout.
 2. **Screen upload** — drag-drop an image/GIF, preview at **180×180**, push it using the
-   protocol in [08-screen-protocol.md](08-screen-protocol.md) (`0xFF1C`, interface 3).
-3. **RGB / lighting** — control effects/colors if exposed through VIA custom or the vendor channel
-   (to be probed).
+   protocol in [08-screen-protocol.md](08-screen-protocol.md) (`0xFF1C`, interface 3). The device write
+   path and orientation are verified; image decoding is still to do.
+3. **RGB / lighting** — global effect, brightness, speed, and color over VIA channel 3 (read path
+   verified). Per-key/ARGB is **not** exposed: a probe of channels 0–7 found no per-key channel.
 4. **Quality-of-life** — auto-detect the device, wired/2.4G mode indicator, save/load profiles,
    AppImage/Flatpak packaging so non-technical users just run it.
 
 ### Architecture
 ```
-┌─────────────── GUI (modern web frontend) ───────────────┐
+┌─────────────── GUI (Electron + Tailwind) ───────────────┐
 │  keymap editor · screen canvas · RGB panel · profiles   │
 └───────────────┬─────────────────────────────────────────┘
                 │ IPC
-┌───────────────▼── device layer (Rust/native) ───────────┐
+┌───────────────▼── device layer (Node + node-hid) ───────┐
 │  hidraw open/enumerate (match usage page in report desc) │
 │  VIA protocol codec (0xFF60)   screen codec (0xFF1C)     │
 └──────────────────────────────────────────────────────────┘
@@ -44,16 +45,18 @@ hardware feature stays intact. This is the host-side "compatibility layer."
 - **Screen codec**: port the already-recovered protocol (RGB565-BE, 64-byte reports, checksum,
   prologue/stream/epilogue). The [decoder](../screen-re/decode_screen.py) is the reference.
 
-### Tech stack — **decision needed** (see end). Recommended: **Tauri** (web UI + Rust backend:
-modern look, tiny binary, clean `hidraw` access, plays to a web-dev skill set). Electron and
-GTK4/libadwaita are the alternatives.
+### Tech stack — **decided: Electron**
+Chosen by the user: Electron + Node (`node-hid`) + Tailwind CSS (see [gui/README.md](../gui/README.md)).
+Tauri was the original recommendation here; it was not chosen. GTK4/libadwaita was not pursued.
 
 ### Phases
-- **A1 — device layer**: enumerate + open the right hidraw nodes by usage page; VIA handshake
-  (protocol version, layer/keymap read). Proves two-way comms.
-- **A2 — keymap editor**: render the layout from JSON, edit keycodes/layers/macros, write back.
-- **A3 — screen tool**: image/GIF import → 180×180 preview → upload (our protocol). The marquee feature.
-- **A4 — RGB + polish + packaging**: lighting control, profiles, AppImage/Flatpak, docs.
+- **A1 — device layer**: ✅ done. Enumerate + open the right hidraw nodes by usage page; VIA
+  handshake (protocol version, layer/keymap read). Proves two-way comms.
+- **A2 — keymap editor**: keymap read is done; the editor UI and write-back are not started.
+- **A3 — screen tool**: ✅ device write done and orientation verified. Image/GIF import and the
+  180×180 preview are not started. The marquee feature.
+- **A4 — RGB + polish + packaging**: RGB scope decided (global effect/brightness/speed/color only).
+  Profiles and AppImage/Flatpak are not started.
 
 ---
 
@@ -106,8 +109,8 @@ route.** That is what makes B "safely flashable" rather than a soldering job.
 | 2.4G preservation (B4) | **High** — may be infeasible | Scope as go/no-go spike; ship BLE as the fallback |
 | Bricking on flash (B1) | Medium | Use CRC-OTA path; keep stock bootloader as recovery; dump stock FW first (done) |
 | Screen driver (B2) | Medium | Resolution/format known; method proven on the matrix GPIOs |
-| VIA RGB coverage (A3/A4) | Low | Probe what stock exposes; fall back to vendor channel |
-| hidraw permissions (A) | Low | Ship a udev rule (pattern already in `linux/`) |
+| VIA RGB coverage (A4) | Resolved | Only global effect/brightness/speed/color on channel 3; per-key not exposed |
+| hidraw permissions (A) | Low | udev rule in `linux/` is installed but its ACL didn't apply on the test machine; `chgrp wheel` workaround in [gui/README.md](../gui/README.md) |
 
-## Open decision (to start Track A)
-**GUI stack**: Tauri (recommended) vs Electron vs GTK4/libadwaita. Pick drives the whole A codebase.
+## Decision (resolved)
+**GUI stack: Electron** (chosen by the user). Tauri was the original recommendation.
