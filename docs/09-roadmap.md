@@ -81,8 +81,12 @@ Tauri was the original recommendation here; it was not chosen. GTK4/libadwaita w
   monitor + rotation (`src/widgets.js`, `src/widget-runner.js`, `screen-widgets.js` CLI, and a
   **Screen widgets** GUI tab with live previews + start/stop). All offline-verified
   (render→codec→1177-report frames); **on-hardware streaming + the real sustainable refresh rate
-  still to be measured**. Next: run on device, partial-region updates (the protocol allows
-  arbitrary-offset writes), more games (CS2 GSI, League Live Client Data), now-playing/notifications.
+  still to be measured**. ✅ **CS2** added (GSI via a shared `src/providers/gsi-server.js`;
+  `src/providers/cs2.js`, offline-tested) — `npm run game -- --game cs2`. ✅ **Now Playing** widget
+  (`src/providers/nowplaying.js`) — shows the running **Steam/Lutris game's logo** (Steam via
+  `/proc` AppId + `registry.vdf` + local library-cache art; Lutris best-effort; all local, no web
+  API). Next: run on device, partial-region updates (arbitrary-offset writes), League Live Client
+  Data, now-playing for media/notifications.
 
 ### Distribution (identity decided: "Keeb Control", `io.github.Hamza-b93.keeb_control`, GPL-3.0)
 - **GitHub Releases** — ✅ automated and proven. Tag `v*` → CI builds AppImage (+ best-effort

@@ -24,6 +24,8 @@
     "test:lighting": "node --test test-lighting.js",
     "test:profiles": "node --test test-profiles.js",
     "test:macros": "node --test test-macros.js",
+    "test:cs2": "node --test test-cs2.js",
+    "test:nowplaying": "node --test test-nowplaying.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --linux AppImage",
     "dist:all": "electron-builder --linux AppImage snap flatpak"

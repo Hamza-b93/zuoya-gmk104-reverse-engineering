@@ -8,7 +8,7 @@
 // parseGsi() is pure (testable without the network). createDota2Provider() runs
 // the HTTP server. Key names vary slightly across Dota builds/spectator-vs-player,
 // so parsing is defensive.
-import http from 'node:http';
+import { createGsiServer } from './gsi-server.js';
 
 // Normalize a raw GSI body into a stable GameState shape.
 export function parseGsi(body) {
@@ -65,29 +65,11 @@ function cleanHeroName(name) {
 // Start the GSI HTTP endpoint. Calls onUpdate(gameState, rawBody) per POST.
 // Returns { server, close() }.
 export function createDota2Provider({ port = 3200, host = '127.0.0.1', token, onUpdate, onError } = {}) {
-  const server = http.createServer((req, res) => {
-    if (req.method !== 'POST') {
-      res.writeHead(405).end();
-      return;
-    }
-    let raw = '';
-    req.on('data', (c) => {
-      raw += c;
-      if (raw.length > 1_000_000) req.destroy(); // guard against runaway bodies
-    });
-    req.on('end', () => {
-      res.writeHead(200).end(); // Dota ignores the body; just ack
-      try {
-        const body = JSON.parse(raw);
-        if (token && body?.auth?.token !== token) return; // optional shared secret
-        onUpdate?.(parseGsi(body), body);
-      } catch (e) {
-        onError?.(e);
-      }
-    });
+  return createGsiServer({
+    port, host, token,
+    onBody: (body) => onUpdate?.(parseGsi(body), body),
+    onError,
   });
-  server.listen(port, host);
-  return { server, close: () => new Promise((r) => server.close(r)) };
 }
 
 // The config file Dota 2 needs. Drop it in:

@@ -15,6 +15,12 @@ _Last updated: 2026-11-26._
   reset). Codec offline-tested (`test-macros.js`). **Unverified on hardware** —
   the stock VIA-emulation firmware may not implement the macro commands; the read
   path reports "no macro support" gracefully if so.
+- **CS2 screen provider + Now Playing widget** — ✅ built: CS2 live stats via GSI
+  (shared `src/providers/gsi-server.js` + `src/providers/cs2.js`, `--game cs2`),
+  and a **Now Playing** widget (`src/providers/nowplaying.js`) showing the running
+  Steam/Lutris game's **logo** (Steam reliable via `/proc`+`registry.vdf`+local art;
+  Lutris best-effort; no web API). Parsers offline-tested (`test-cs2.js`,
+  `test-nowplaying.js`). Not yet streamed to real hardware.
 
 ## Track B — open ZMK firmware (flashing)
 Full analysis in [`docs/05-zmk-porting-plan.md`](docs/05-zmk-porting-plan.md) /
@@ -44,13 +50,21 @@ of the risk):
 Related:
 - [ ] **OpenRGB** — not worthwhile on stock firmware (no per-key channel; a driver
       would only re-expose the global-only ceiling the Lighting tab already has).
-      Revisit *under ZMK*, where per-key + direct mode make it meaningful.
+      **Note: flashing ZMK does NOT give OpenRGB support.** OpenRGB only drives a
+      keyboard via a native vendor protocol or **QMK's** OpenRGB direct-mode
+      feature; ZMK implements neither, and the QMK path is closed on this chip
+      (no Telink target). ZMK unlocks *per-key RGB on the device* (configured in
+      ZMK / ZMK Studio), but OpenRGB-the-app still won't talk to it without
+      net-new work: an OpenRGB-protocol endpoint **inside** the ZMK firmware **+**
+      an OpenRGB driver for it (neither exists; also cuts against ZMK's low-power
+      BLE model). More tractable alternative if host-side RGB control is the goal:
+      give **Keeb Control** its own ZMK RGB control path — we own both ends.
 
 ## Queued (picked from the A6 / A3 "Next" lists)
-- [ ] **More live providers (A6)** — CS2 via GSI, a now-playing / media widget,
-      and desktop notifications on the screen. Extends the proven render→stream
-      pipeline (`src/render.js` + `src/screen-stream.js`); no new hardware deps.
-      League Live Client Data is a second candidate.
+- [ ] **More live providers (A6)** — ✅ CS2 + Now Playing done. Remaining: **League
+      Live Client Data** (localhost:2999), a **media / now-playing** widget (MPRIS
+      on Linux), and **desktop notifications** on the screen. Same render→stream
+      pipeline; no new hardware deps.
 - [ ] **GIF animation + preview (A3)** — animated GIF upload to the 180×180
       panel plus a live preview canvas in the screen tab.
 - [ ] **Partial-region screen updates (A6)** — use the protocol's arbitrary

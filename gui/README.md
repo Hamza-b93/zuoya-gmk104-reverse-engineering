@@ -38,8 +38,9 @@ app registry-driven so it supports boards beyond the GMK104 (see "Next" at the b
 | RGB lighting (`src/lighting.js`, `set-light.js`) | ✅ **Lighting** tab + CLI: effect/brightness/speed/hue/sat over VIA custom channel 3, live sliders, read-back + save-to-flash. Codec tested offline (`npm run test:lighting`). Not yet exercised on hardware. |
 | Profiles (`src/profiles.js`) | ✅ **Profiles** tab: snapshot the full keymap (all layers) + lighting to portable JSON, re-apply in one click, import/export. Capture/apply tested offline (`npm run test:profiles`). |
 | Packaging (AppImage / Snap / Flatpak) | ✅ electron-builder config + CI release workflow. AppImage build verified; Snap/Flatpak via CI. |
-| Live game stats on the screen (Dota 2) | ✅ pipeline built + offline-verified (GSI listen → parse → render → codec frame). Device streaming not yet run on hardware. `npm run game`. |
-| Screen widgets (clock, system monitor, rotation) | ✅ GUI tab + `npm run widgets`; live previews, start/stop/rotate. Streams host data to the panel. Device streaming not yet run on hardware. |
+| Live game stats on the screen (Dota 2 · CS2) | ✅ pipeline built + offline-verified (GSI listen → parse → render → codec frame) for both games via a shared GSI server. Device streaming not yet run on hardware. `npm run game -- --game cs2`. |
+| Now playing widget (Steam / Lutris logo) | ✅ detects the running game and shows its **logo** (`src/providers/nowplaying.js`); Steam via `/proc` + `registry.vdf` + local library-cache art, Lutris best-effort. All local, no web API. Parsers tested offline (`npm run test:nowplaying`). |
+| Screen widgets (clock, system monitor, now-playing, rotation) | ✅ GUI tab + `npm run widgets`; live previews, start/stop/rotate. Streams host data to the panel. Device streaming not yet run on hardware. |
 | Styling: hand-rolled CSS for now; Tailwind build step | ⬜ not wired (CSS in `renderer/style.css`) |
 | udev rule (`linux/92-zuoya-via.rules`) | ⚠️ installed to `/etc/udev/rules.d/`, but its `uaccess` ACL was not applied on the test machine. The screen node was opened with `chgrp wheel` + `chmod 0660` instead. |
 
@@ -67,8 +68,11 @@ gui/
 │   ├── widgets.js    # screen widgets (clock, system monitor): render host data to a frame
 │   ├── widget-runner.js # drive widgets onto the panel (interval + rotation) via ScreenStream
 │   └── providers/
-│       └── dota2.js  # Dota 2 Game State Integration listener + parser (+ config generator)
-├── game-screen.js    # CLI: live game stats on the screen (npm run game) — Dota 2 today
+│       ├── gsi-server.js  # shared Game State Integration HTTP endpoint
+│       ├── dota2.js       # Dota 2 GSI parser (+ config generator)
+│       ├── cs2.js         # Counter-Strike 2 GSI parser (+ config generator)
+│       └── nowplaying.js  # detect the running Steam/Lutris game, render its logo
+├── game-screen.js    # CLI: live game stats on the screen (npm run game) — Dota 2 + CS2
 ├── screen-widgets.js # CLI: run a screen widget / rotation (npm run widgets)
 ├── doctor.js         # read-only diagnostic dump of HID keyboards (npm run doctor)
 ├── upload-image.js   # CLI: upload an image file to the screen (npm run upload)
@@ -169,6 +173,7 @@ clock, a scoreboard, or a system monitor — not for video.
 npm run widgets            # list widgets
 npm run widgets clock      # stream the clock
 npm run widgets sysmon     # CPU / RAM / temp / uptime
+npm run widgets nowplaying # the game you're playing, as its logo
 npm run widgets rotate     # cycle through all widgets
 ```
 
@@ -176,22 +181,31 @@ Or use the **Screen widgets** tab in the app (live previews + start/stop). Widge
 `src/widgets.js`; `src/widget-runner.js` drives them onto the panel. A new widget is just another
 entry that returns a 180×180 scene.
 
-### Game stats (Dota 2)
+**Now playing** (`src/providers/nowplaying.js`) detects the running game and shows its **logo**
+instead of its name. **Steam** is reliable — it finds the running app from `/proc` (the `AppId=`
+on Steam's launch wrapper, so Proton games count too) with a `registry.vdf` fallback, reads the
+name from the app manifest, and pulls the logo from Steam's own local library cache
+(`logo.png` → `header.jpg` fallback). **Lutris** is best-effort (matches a running process to a
+Lutris game config + cover art). Everything is local — no Steam Web API, no account data leaves the
+machine. Nothing running → "Nothing playing".
 
-**Dota 2** is wired up via Valve's Game State Integration (GSI): Dota POSTs live match state to a
-local HTTP endpoint we run, and we render K/D/A (+ hero, net worth) to the screen.
+### Game stats (Dota 2 · CS2)
+
+Valve's Game State Integration (GSI): the game POSTs live match state to a local HTTP endpoint we
+run, and we render K/D/A (+ context) to the screen.
 
 ```bash
-npm run game -- --print-config    # prints the GSI config file + where to put it (no device needed)
-# ...save that file, add -gamestateintegration to Dota 2's launch options...
-npm run game                      # listen on 127.0.0.1:3200 and stream KDA to the screen
+npm run game -- --game cs2 --print-config   # print the GSI config + where to put it (no device)
+# ...save that file (CS2 needs no launch option; Dota 2 needs -gamestateintegration)...
+npm run game -- --game cs2                   # listen + stream to the screen
+npm run game                                 # defaults to dota2 (port 3200; cs2 is 3201)
 ```
 
-Pieces: `src/providers/dota2.js` (GSI listener + a defensive parser for the `player` section, which
-differs between playing and spectating), `src/render.js` (scene → SVG → 180×180 RGB888 via sharp),
-`src/screen-stream.js` (keeps the `0xFF1C` handle open and streams frames, newest wins). Offline
-tests in `test-game.js`. Adding another game = a new provider under `src/providers/` that emits the
-same normalized shape (CS2 also has GSI; League has the Live Client Data API).
+Pieces: `src/providers/gsi-server.js` (shared HTTP endpoint), `src/providers/dota2.js` and
+`src/providers/cs2.js` (defensive per-game parsers), `src/render.js` (scene → SVG → 180×180 RGB888
+via sharp), `src/screen-stream.js` (keeps the `0xFF1C` handle open, newest frame wins). Offline
+tests in `test-game.js` / `test-cs2.js`. Adding another game = a new provider that emits the same
+normalized shape (League has the Live Client Data API next).
 
 ## Packaging (AppImage / Snap / Flatpak)
 

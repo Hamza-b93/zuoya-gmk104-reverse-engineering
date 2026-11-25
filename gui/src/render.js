@@ -42,7 +42,7 @@ export async function svgToPngDataUrl(svg) {
   return `data:image/png;base64,${png.toString('base64')}`;
 }
 
-function text(x, y, s, { size = 20, fill = '#e6ecf5', weight = 400, anchor = 'middle', family = 'sans-serif' } = {}) {
+export function text(x, y, s, { size = 20, fill = '#e6ecf5', weight = 400, anchor = 'middle', family = 'sans-serif' } = {}) {
   return (
     `<text x="${x}" y="${y}" font-family="${family}" font-size="${size}" font-weight="${weight}" ` +
     `fill="${fill}" text-anchor="${anchor}">${escapeXml(s)}</text>`

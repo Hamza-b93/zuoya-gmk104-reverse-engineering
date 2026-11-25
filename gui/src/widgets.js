@@ -4,6 +4,7 @@
 import os from 'node:os';
 import { readFileSync } from 'node:fs';
 import { svgFrame, clockSvg, statsSvg, renderSvg, svgToPngDataUrl } from './render.js';
+import { nowPlayingScene } from './providers/nowplaying.js';
 
 const pct = (n) => Math.round(n);
 
@@ -74,6 +75,15 @@ export const WIDGETS = [
       if (temp != null) rows.push({ label: 'Temp', value: `${temp}°C`, pct: Math.min(100, temp) });
       rows.push({ label: 'Up', value: fmtUptime(os.uptime()) });
       return statsSvg({ title: os.hostname().slice(0, 18).toUpperCase(), rows });
+    },
+  },
+  {
+    id: 'nowplaying',
+    name: 'Now playing',
+    defaultIntervalMs: 3000,
+    background: '#0b0f17',
+    scene() {
+      return nowPlayingScene(); // Steam/Lutris game logo, or "Nothing playing"
     },
   },
 ];
