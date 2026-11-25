@@ -35,6 +35,7 @@ app registry-driven so it supports boards beyond the GMK104 (see "Next" at the b
 | KLE layout parser (`src/layout.js`) | ✅ parses the VIA definition; offline test `npm run test:layout`. |
 | Diagnostics dump (`doctor.js`) + keyboard registry (`src/registry.js`) | ✅ `npm run doctor` writes a redacted report for issue-based board support. |
 | Packaging (AppImage / Snap / Flatpak) | ✅ electron-builder config + CI release workflow. AppImage build verified; Snap/Flatpak via CI. |
+| Live game stats on the screen (Dota 2) | ✅ pipeline built + offline-verified (GSI listen → parse → render → codec frame). Device streaming not yet run on hardware. `npm run game`. |
 | Styling: hand-rolled CSS for now; Tailwind build step | ⬜ not wired (CSS in `renderer/style.css`) |
 | udev rule (`linux/92-zuoya-via.rules`) | ⚠️ installed to `/etc/udev/rules.d/`, but its `uaccess` ACL was not applied on the test machine. The screen node was opened with `chgrp wheel` + `chmod 0660` instead. |
 
@@ -52,8 +53,13 @@ gui/
 │   ├── layout.js     # parse the VIA KLE layout -> positioned keys + matrix; keymap offsets
 │   ├── registry.js   # known-keyboard registry (VID/PID + usage pages); generalization seed
 │   ├── screen.js     # screen codec: RGB888 -> RGB565-BE reports (offline, no I/O)
-│   ├── screen-device.js # write screen reports to the 0xFF1C node
-│   └── image.js      # decode any image file -> 180x180 RGB888 (sharp)
+│   ├── screen-device.js # write screen reports to the 0xFF1C node (one-shot)
+│   ├── screen-stream.js # stream frames for live content (keeps handle open, latest-wins)
+│   ├── render.js     # compose a 180x180 RGB888 frame from a scene (SVG -> sharp)
+│   ├── image.js      # decode any image file -> 180x180 RGB888 (sharp)
+│   └── providers/
+│       └── dota2.js  # Dota 2 Game State Integration listener + parser (+ config generator)
+├── game-screen.js    # CLI: live game stats on the screen (npm run game) — Dota 2 today
 ├── doctor.js         # read-only diagnostic dump of HID keyboards (npm run doctor)
 ├── upload-image.js   # CLI: upload an image file to the screen (npm run upload)
 ├── write-key.js      # CLI: read/write one keymap cell with read-back (npm run write-key)
@@ -123,6 +129,28 @@ Any format sharp reads (PNG/JPG/WebP/GIF/…) is decoded, resized to 180×180 an
 `--fit cover` (default) fills the square and crops; `--fit contain` fits the whole image and
 letterboxes with `--bg`. GIFs upload their first frame (animation is not wired up yet). Close the
 Windows tool / Wine first — it holds the hidraw handle.
+
+## Live game stats on the screen (Dota 2)
+
+The screen is a dumb 180×180 panel — it shows whatever frame the host pushes. "Dynamic" content
+means the app renders a fresh frame when the data changes and streams it. A full frame is ~1177 HID
+reports (~1 report/ms over USB), so expect ~1–1.5 s per frame: ideal for slow-changing data like a
+scoreboard, not for video.
+
+**Dota 2** is wired up via Valve's Game State Integration (GSI): Dota POSTs live match state to a
+local HTTP endpoint we run, and we render K/D/A (+ hero, net worth) to the screen.
+
+```bash
+npm run game -- --print-config    # prints the GSI config file + where to put it (no device needed)
+# ...save that file, add -gamestateintegration to Dota 2's launch options...
+npm run game                      # listen on 127.0.0.1:3200 and stream KDA to the screen
+```
+
+Pieces: `src/providers/dota2.js` (GSI listener + a defensive parser for the `player` section, which
+differs between playing and spectating), `src/render.js` (scene → SVG → 180×180 RGB888 via sharp),
+`src/screen-stream.js` (keeps the `0xFF1C` handle open and streams frames, newest wins). Offline
+tests in `test-game.js`. Adding another game = a new provider under `src/providers/` that emits the
+same normalized shape (CS2 also has GSI; League has the Live Client Data API).
 
 ## Packaging (AppImage / Snap / Flatpak)
 

@@ -13,9 +13,11 @@
     "upload": "node upload-image.js",
     "write-key": "node write-key.js",
     "doctor": "node doctor.js",
+    "game": "node game-screen.js",
     "test:screen": "node --test test-screen-codec.js",
     "test:image": "node --test test-image.js",
     "test:layout": "node --test test-layout.js",
+    "test:game": "node --test test-game.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --linux AppImage",
     "dist:all": "electron-builder --linux AppImage snap flatpak"

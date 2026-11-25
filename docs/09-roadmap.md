@@ -66,6 +66,13 @@ Tauri was the original recommendation here; it was not chosen. GTK4/libadwaita w
 - **A5 — widen hardware support**: ✅ started. Device registry (`gui/src/registry.js`) + a read-only
   diagnostics dump (`gui/doctor.js`) + a GitHub issue form so owners of other VIA keyboards can
   request support. Keymap generalizes by usage page; the screen tool needs per-board confirmation.
+- **A6 — live screen widgets / game integration**: ✅ started. The screen is host-driven, so live
+  content = render a frame on data change and stream it (`src/render.js` SVG→RGB888,
+  `src/screen-stream.js` keep-open latest-wins pusher). First integration: **Dota 2** via Game State
+  Integration (`src/providers/dota2.js`, `game-screen.js` CLI) showing K/D/A. Offline-verified end to
+  end (listen→parse→render→codec); on-hardware streaming + the real sustainable refresh rate still to
+  be measured. Next: run on device, a clock widget, partial-region updates (the protocol allows
+  arbitrary-offset writes), more games (CS2 GSI, League Live Client Data), and a GUI widget picker.
 
 ### Distribution (identity decided: "Keeb Control", `io.github.Hamza-b93.keeb_control`, GPL-3.0)
 - **GitHub Releases** — ✅ automated and proven. Tag `v*` → CI builds AppImage (+ best-effort
