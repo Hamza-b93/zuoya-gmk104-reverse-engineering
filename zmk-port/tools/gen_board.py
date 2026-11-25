@@ -90,9 +90,10 @@ DTS = f'''/dts-v1/;
  * controller, telink HAL + patches, and the rainy_rgb engine.
  *
  *   VERIFIED  : matrix transform + physical layout (from the VIA definition),
- *               column GPIOs (Evision platform constant), SoC/flash/USB/BLE.
- *   TODO/PROBE: the 2 EXTRA ROW GPIOs (rows 6-7), the RGB chain-length, and the
- *               duplicated matrix cell RC(7,13) (see keymap). See BOARD-README.md.
+ *               column GPIOs (Evision platform constant), all 8 ROW GPIOs
+ *               (confirmed in the stock firmware disassembly), SoC/flash/USB/BLE.
+ *   TODO/PROBE: the RGB chain-length, and the duplicated matrix cell RC(7,13)
+ *               (see keymap). See BOARD-README.md.
  */
 
 #include <freq.h>
@@ -176,19 +177,18 @@ DTS = f'''/dts-v1/;
 			, <&gpiob 5 GPIO_ACTIVE_LOW>
 			;
 
-		/* ROWS ({nrows}) — rows 0-5 are the rainy75 platform pins (PE0, PD2-6).
-		 * !!! rows 6 and 7 are BEST-GUESS and MUST be probed/confirmed !!!
-		 * Prime candidates from the platform's otherwise-unused pins: PE3
-		 * (referenced in shared Evision matrix code) and PD7. */
+		/* ROWS ({nrows}) — all confirmed in the stock firmware's matrix scan
+		 * (disassembly: PE0 + PD2-6 = rows 0-5; PE3 read @0x20008f48 = row 6;
+		 *  PD7 read @0x2000d0d0 = row 7). Order matches the Evision platform. */
 		row-gpios
-			= <&gpioe 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>
-			, <&gpiod 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>
-			, <&gpiod 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>
-			, <&gpiod 4 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>
-			, <&gpiod 5 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>
-			, <&gpiod 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>
-			, <&gpiod 7 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>   /* row 6 — GUESS, verify */
-			, <&gpioe 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>   /* row 7 — GUESS, verify */
+			= <&gpioe 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>   /* row 0 = PE0 */
+			, <&gpiod 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>   /* row 1 = PD2 */
+			, <&gpiod 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>   /* row 2 = PD3 */
+			, <&gpiod 4 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>   /* row 3 = PD4 */
+			, <&gpiod 5 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>   /* row 4 = PD5 */
+			, <&gpiod 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>   /* row 5 = PD6 */
+			, <&gpioe 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>   /* row 6 = PE3 (fw-confirmed) */
+			, <&gpiod 7 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>   /* row 7 = PD7 (fw-confirmed) */
 			;
 	}};
 

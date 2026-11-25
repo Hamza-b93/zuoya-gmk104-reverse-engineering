@@ -14,19 +14,19 @@ yet** — it is the scaffold described in [`../../docs/05-zmk-porting-plan.md`](
 |---|---|---|
 | Matrix transform | ✅ **Correct** | Generated from `ZUOYA-GMK104-USB.json` — 107 keys, 8×14 used. |
 | Physical layout | ✅ **Correct** | Generated from the VIA geometry. |
-| Column GPIOs (14) | 🟡 **Likely** | Evision platform order `PE4-7 / PA0-4 / PB1-5`. Verify. |
-| Row GPIOs 0–5 | 🟡 **Likely** | `PE0, PD2-PD6` (rainy75 platform). |
-| **Row GPIOs 6–7** | 🔴 **GUESS** | `PD7`, `PE3` are placeholders — **must be probed**. |
-| RGB `chain-length` | 🔴 **GUESS** | Set to 107; real per-key LED count unknown. |
+| Column GPIOs (14) | 🟡 **Likely** | Evision platform order `PE4-7 / PA0-4 / PB1-5`. |
+| Row GPIOs 0–5 | ✅ **Confirmed** | `PE0, PD2-PD6` — in the stock firmware scan. |
+| **Row GPIOs 6–7** | ✅ **Confirmed** | `row6 = PE3`, `row7 = PD7` — from firmware disassembly ([../../docs/07](../../docs/07-firmware-gpio-re.md)). |
+| RGB `chain-length` | 🔴 **GUESS** | Set to 107; real per-key LED count still unknown. |
 | Battery ADC | 🟡 **Likely** | `PD1` ch `0x0A` from rainy75. |
 | Keymap legends | 🟡 **Draft** | Alphas/numbers/numpad solid; encoder + bottom-right + the `RC(7,13)` duplicate need checking. |
 | SoC / flash / USB / BLE | ✅ **Platform** | Reused from rainy75 (B91). |
 
 ## Known issues to resolve on hardware
 
-1. **Rows 6–7 GPIOs** — the GMK104 uses 8 matrix rows; rainy75 only proved 6. `PD7`/`PE3`
-   are educated guesses. Flash a diagnostic/ZMK build and probe GPIO registers (rainy75's
-   `boot_diag` method) to confirm.
+1. ~~Rows 6–7 GPIOs~~ — **resolved** by firmware disassembly: `row6 = PE3`, `row7 = PD7`
+   (see [../../docs/07-firmware-gpio-re.md](../../docs/07-firmware-gpio-re.md)). Worth a final
+   live sanity check, but no longer a guess.
 2. **`RC(7,13)` is duplicated** in the VIA JSON — both `ESC` and the tall numpad key map to
    it. Electrically impossible to share; one is wrong. Probe to find the tall key's real
    cell. The skeleton assigns `ESC` to the top key and `KP_ENTER` to the tall one.
