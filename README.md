@@ -39,6 +39,7 @@ with a focus on **using the board on Linux**.
 - **[docs/05-zmk-porting-plan.md](docs/05-zmk-porting-plan.md)** — If you want to pursue ZMK: a GMK104-specific porting checklist + no-case-opening flash-path go/no-go, built from the sibling `rainy75-zmk` port.
 - **[docs/06-hardware-probe.md](docs/06-hardware-probe.md)** — Read-only USB/HID probe of a real unit: the 4-interface map confirming VIA (`0xFF60`), the OTA channel (`0xFFEF`), NKRO, and a 4th `0xFF1C` vendor channel.
 - **[docs/07-firmware-gpio-re.md](docs/07-firmware-gpio-re.md)** — Static RISC-V disassembly of the stock firmware confirming all 8 matrix **row** GPIOs (incl. `row6=PE3`, `row7=PD7`) for the ZMK port.
+- **[docs/09-roadmap.md](docs/09-roadmap.md)** — Where this is headed: **Track A** (a no-flash Linux GUI to configure keys + screen) and **Track B** (open ZMK-based firmware, with the 2.4G-preservation question scoped honestly).
 - **[docs/08-screen-protocol.md](docs/08-screen-protocol.md)** — Screen (`0xFF1C`) upload protocol **fully reverse-engineered** (live usbmon capture of the Windows tool under Wine): **180×180, RGB565 big-endian**, 64-byte reports, the checksum, and the complete command sequence — enough to upload images from Linux without Wine. Raw capture + reconstructed proof image in [`screen-re/capture/`](screen-re/capture/).
 
 ## Verdict on "can it run VIA firmware?"
