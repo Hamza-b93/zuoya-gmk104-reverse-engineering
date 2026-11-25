@@ -52,9 +52,11 @@ Tauri was the original recommendation here; it was not chosen. GTK4/libadwaita w
 ### Phases
 - **A1 — device layer**: ✅ done. Enumerate + open the right hidraw nodes by usage page; VIA
   handshake (protocol version, layer/keymap read). Proves two-way comms.
-- **A2 — keymap editor**: keymap read is done; the editor UI and write-back are not started.
-- **A3 — screen tool**: ✅ device write done and orientation verified. Image/GIF import and the
-  180×180 preview are not started. The marquee feature.
+- **A1.5 — Electron shell**: ✅ done. Window + secure IPC bridge (`main.js`/`preload.cjs`/`renderer/`)
+  surfacing detect-device, read-keymap and upload-image. Boots and talks to the device layer.
+- **A2 — keymap editor**: keymap read is done; the editor UI (grid + write-back) is not started.
+- **A3 — screen tool**: ✅ device write + orientation verified; ✅ image import/decode done
+  (`src/image.js`, `upload-image.js` CLI + in-app upload). Still: GIF animation and a preview canvas.
 - **A4 — RGB + polish + packaging**: RGB scope decided (global effect/brightness/speed/color only).
   Profiles and AppImage/Flatpak are not started.
 

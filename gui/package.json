@@ -4,7 +4,9 @@
   "private": true,
   "description": "Linux GUI to configure the ZUOYA GMK104 keyboard + screen over hidraw (no flashing).",
   "type": "module",
+  "main": "main.js",
   "scripts": {
+    "start": "electron .",
     "handshake": "node test-handshake.js",
     "upload": "node upload-image.js",
     "test:screen": "node --test test-screen-codec.js",
@@ -13,5 +15,8 @@
   "dependencies": {
     "node-hid": "^3.1.2",
     "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "electron": "^45.5.0"
   }
 }

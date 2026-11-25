@@ -6,9 +6,11 @@ talking to the **stock firmware** over `hidraw`. Nothing is flashed, so 2.4G / s
 
 **Stack (chosen):** Electron + Node (`node-hid`) + a web frontend styled with Tailwind CSS.
 
-## Status — foundation proven, UI not built yet
+## Status — device layer verified; Electron shell up
 
-The hardware/device layer is **done and verified on real hardware**; the Electron UI is the next phase.
+The hardware/device layer is **done and verified on real hardware**. The Electron shell now boots
+and surfaces three capabilities (detect device, read keymap, upload image) over a secure IPC bridge.
+Run it with `npm start`. Next: the keymap-grid editor and a Tailwind build step.
 
 | Piece | State |
 |---|---|
@@ -19,15 +21,20 @@ The hardware/device layer is **done and verified on real hardware**; the Electro
 | Screen upload protocol (180×180 RGB565-BE) | ✅ fully RE'd ([docs/08](../docs/08-screen-protocol.md)) |
 | Screen codec (`src/screen.js`) | ✅ ported; matches the captured upload offline (`npm run test:screen`). |
 | Screen device write (`src/screen-device.js`) | ✅ verified on hardware: four-quadrant test pattern (`node send-test-pattern.js`) shows the correct orientation. |
-| Electron window / Tailwind UI | ⬜ not started |
-| Keymap-grid editor UI | ⬜ not started |
-| Screen uploader UI | ⬜ not started |
+| Electron shell (window + secure IPC bridge) | ✅ boots; `main.js` + `preload.cjs` + `renderer/`. `npm start`. |
+| App UI — detect device, read keymap, upload image | ✅ first pass: three cards wired to the device layer over IPC. |
+| Image → screen CLI + decoder (`src/image.js`, `upload-image.js`) | ✅ `npm run upload -- photo.png`; offline test `npm run test:image`. |
+| Keymap-grid editor UI (edit + `set_buffer` write-back) | ⬜ not started |
+| Styling: hand-rolled CSS for now; Tailwind build step | ⬜ not wired (CSS in `renderer/style.css`) |
 | udev rule (`linux/92-zuoya-via.rules`) | ⚠️ installed to `/etc/udev/rules.d/`, but its `uaccess` ACL was not applied on the test machine. The screen node was opened with `chgrp wheel` + `chmod 0660` instead. |
 
 ## What's here
 
 ```
 gui/
+├── main.js           # Electron main: owns all device I/O, exposes typed IPC handlers
+├── preload.cjs       # contextBridge: exposes window.zuoya to the renderer (no raw ipc/Node)
+├── renderer/         # UI: index.html + style.css + renderer.js (talks only to window.zuoya)
 ├── src/
 │   ├── device.js     # enumerate GMK104 hidraw interfaces, open by usage page
 │   ├── via.js        # VIA codec: protocol version, layer count, get/set keymap buffer
@@ -42,6 +49,19 @@ gui/
 ├── send-test-pattern.js # four-quadrant orientation test on the device
 └── package.json
 ```
+
+## Run the app
+
+```bash
+cd gui
+npm install
+npm start        # launches the Electron window
+```
+
+The window has three cards — **Detect** (lists the hidraw interfaces by usage page), **Read keymap**
+(VIA protocol version, layer count, decoded top row), and **Upload image…** (file picker → 180×180 →
+screen). Each button calls the same verified device layer the CLIs use, over the `preload.cjs` bridge.
+It needs the same hidraw access as the probe below (udev rule or the `chgrp` fallback).
 
 ## Run the handshake probe
 
@@ -97,8 +117,12 @@ Windows tool / Wine first — it holds the hidraw handle.
 
 ## Next (when we resume)
 
-1. Make udev access work without manual permission changes (the rule is installed; the ACL needs investigating).
-2. Electron shell wiring `src/` into a window (main ↔ renderer IPC).
-3. Keymap-grid editor from the VIA JSON layout (read → edit → `set_buffer` write).
-4. Screen uploader UI: image decoding (PNG/GIF to RGB888) is still to be chosen. The device path (`uploadImage` in `src/screen-device.js`) and orientation are verified.
+1. Keymap-grid editor from the VIA JSON layout (read → edit → `set_buffer` write) — the first
+   write-back path, still never exercised. Needs a fuller keycode table than `src/keycodes.js`.
+2. Screen uploader UX in-app: thumbnail/preview before push, drag-and-drop, maybe a live 180×180
+   preview canvas. The decode + device path are done (`src/image.js` → `uploadImage`).
+3. Swap the hand-rolled `renderer/style.css` for a real Tailwind build step (declared stack).
+4. Make udev access work without manual permission changes (the rule is installed; the ACL needs investigating).
 5. RGB control via VIA channel 3 only (brightness, effect, speed, global color). A probe of channels 0–7 and value IDs 1–5 found no per-key channel, so per-key/ARGB editing is out of scope. Profiles and AppImage/Flatpak packaging come after that.
+6. GIF animation upload (first frame works today) — needs an animated capture to RE the `0x06`
+   metadata for multi-frame playback.

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>ZUOYA GMK104 Control</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>ZUOYA GMK104 <span class="muted">Control</span></h1>
+      <p class="sub">Linux config over hidraw — no flashing. Device layer verified on hardware.</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <div class="card-head">
+          <h2>Device</h2>
+          <button id="btn-detect">Detect</button>
+        </div>
+        <div id="device-status" class="status">Not detected yet.</div>
+        <ul id="device-list" class="list"></ul>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Keymap</h2>
+          <button id="btn-keymap">Read keymap</button>
+        </div>
+        <div id="keymap-status" class="status">Reads protocol version, layer count, and the top row over VIA.</div>
+        <div id="keymap-meta" class="meta"></div>
+        <div id="keymap-row" class="keyrow"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Screen</h2>
+          <div class="controls">
+            <label>Fit
+              <select id="fit">
+                <option value="cover">cover (crop)</option>
+                <option value="contain">contain (letterbox)</option>
+              </select>
+            </label>
+            <button id="btn-upload">Upload image…</button>
+          </div>
+        </div>
+        <div id="screen-status" class="status">Pick an image — decoded to 180×180 and pushed to the panel.</div>
+      </section>
+    </main>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>
