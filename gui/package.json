@@ -1,6 +1,6 @@
 {
   "name": "keeb-control",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Keeb Control — configure the ZUOYA GMK104 and compatible VIA keyboards + screen over hidraw (no flashing).",
   "author": "Hamza-b93",
@@ -55,7 +55,11 @@
     "linux": {
       "category": "Utility",
       "icon": "build/icon.png",
-      "target": ["AppImage", "snap", "flatpak"],
+      "target": [
+        "AppImage",
+        "snap",
+        "flatpak"
+      ],
       "synopsis": "Configure ZUOYA GMK104 and compatible VIA keyboards over hidraw — no flashing.",
       "maintainer": "Hamza-b93"
     },
