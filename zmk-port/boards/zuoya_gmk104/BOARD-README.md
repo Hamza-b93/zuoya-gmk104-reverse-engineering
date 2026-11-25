@@ -17,7 +17,7 @@ yet** — it is the scaffold described in [`../../docs/05-zmk-porting-plan.md`](
 | Column GPIOs (14) | 🟡 **Likely** | Evision platform order `PE4-7 / PA0-4 / PB1-5`. |
 | Row GPIOs 0–5 | ✅ **Confirmed** | `PE0, PD2-PD6` — in the stock firmware scan. |
 | **Row GPIOs 6–7** | ✅ **Confirmed** | `row6 = PE3`, `row7 = PD7` — from firmware disassembly ([../../docs/07](../../docs/07-firmware-gpio-re.md)). |
-| RGB `chain-length` | 🟡 **Estimate** | Set to **105** (107 keys − 2 encoder halves; owner counted ≥103). Trim ±1 at bring-up. |
+| RGB `chain-length` | ✅ **104** | Owner's physical LED count (105 switch positions − encoder push, which has no LED). |
 | Battery ADC | 🟡 **Likely** | `PD1` ch `0x0A` from rainy75. |
 | Keymap legends | 🟡 **Draft** | Alphas/numbers/numpad solid; encoder + bottom-right + the `RC(7,13)` duplicate need checking. |
 | SoC / flash / USB / BLE | ✅ **Platform** | Reused from rainy75 (B91). |

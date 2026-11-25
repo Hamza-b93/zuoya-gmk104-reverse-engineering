@@ -11,8 +11,8 @@
  *   VERIFIED  : matrix transform + physical layout (from the VIA definition),
  *               column GPIOs (Evision platform constant), all 8 ROW GPIOs
  *               (confirmed in the stock firmware disassembly), SoC/flash/USB/BLE.
- *   TODO/PROBE: the RGB chain-length, and the duplicated matrix cell RC(7,13)
- *               (see keymap). See BOARD-README.md.
+ *   TODO/PROBE: the duplicated matrix cell RC(7,13) (see keymap). See BOARD-README.md.
+ *               (RGB chain-length = 104, the owner's physical LED count.)
  */
 
 #include <freq.h>
@@ -235,10 +235,10 @@
 
 	led_strip: ws2812 {
 		compatible = "telink,b91-spi-led-strip";
-		/* Per-key WS2812 LEDs. Layout = 105 switch positions (107 keys - 2 encoder
-		 * halves); owner counted >=103 physically. 105 is safe-high; trim by 1-2 at
-		 * RGB bring-up if the last keys misalign. No separate underglow strip. */
-		chain-length = <105>;
+		/* Per-key WS2812 LEDs = 104 (owner's physical count). Layout has 105 switch
+		 * positions (107 keys - 2 encoder halves); the encoder push has no per-key LED,
+		 * giving 104. No separate underglow strip. */
+		chain-length = <104>;
 		color-mapping = <LED_COLOR_ID_GREEN LED_COLOR_ID_RED LED_COLOR_ID_BLUE>;
 	};
 
