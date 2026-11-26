@@ -26,6 +26,7 @@ document.querySelectorAll('.tab').forEach((tab) =>
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${view}`));
     if (view === 'keymap') ensureLayout();
     if (view === 'macros') ensureMacros();
+    if (view === 'kanata') ensureKanata();
     if (view === 'lighting') ensureLighting();
     if (view === 'profiles') ensureProfiles();
     if (view === 'widgets') ensureWidgets();
@@ -481,6 +482,52 @@ $('btn-macro-reset').addEventListener('click', () =>
     macroState.slots = macroState.slots.map(() => []);
     renderSteps();
     setStatus($('macro-status'), `Cleared all ${res.data.count} macros on the keyboard.`, 'ok');
+  }),
+);
+
+// ---------- Kanata ----------
+const kanata = { loaded: false };
+
+async function detectKanata() {
+  const res = await window.zuoya.kanataDetect();
+  if (!res.ok) return;
+  const { installed, version, uinput } = res.data;
+  const parts = [
+    installed ? `✓ kanata ${version ? `(${version})` : 'found'}` : '✗ kanata not on PATH',
+    uinput ? '✓ /dev/uinput writable' : '✗ /dev/uinput not writable',
+  ];
+  const el = $('kanata-detect');
+  el.textContent = parts.join('   ·   ');
+  el.className = 'kanata-detect' + (installed && uinput ? ' ok' : ' warn');
+}
+
+async function ensureKanata() {
+  if (kanata.loaded) return;
+  kanata.loaded = true;
+  detectKanata();
+}
+
+$('btn-kanata-detect').addEventListener('click', () => withBusy($('btn-kanata-detect'), detectKanata));
+
+$('btn-kanata-generate').addEventListener('click', () =>
+  withBusy($('btn-kanata-generate'), async () => {
+    const res = await window.zuoya.kanataGenerate();
+    if (!res.ok) return setStatus($('kanata-status'), res.error, 'err');
+    $('kanata-config').value = res.data.config;
+    $('btn-kanata-save').disabled = false;
+    const skipped = res.data.skipped.length ? ` (${res.data.skipped.length} key(s) passed through unmanaged)` : '';
+    setStatus($('kanata-status'), `Generated a config for ${res.data.mapped} keys${skipped}. Edit it, then Save.`, 'ok');
+  }),
+);
+
+$('btn-kanata-save').addEventListener('click', () =>
+  withBusy($('btn-kanata-save'), async () => {
+    const config = $('kanata-config').value;
+    if (!config.trim()) return setStatus($('kanata-status'), 'Nothing to save — generate a config first.', 'err');
+    const res = await window.zuoya.kanataSave(config);
+    if (!res.ok) return setStatus($('kanata-status'), res.error, 'err');
+    if (res.data.canceled) return;
+    setStatus($('kanata-status'), `Saved to ${res.data.path}. Run: kanata --cfg "${res.data.path}"`, 'ok');
   }),
 );
 

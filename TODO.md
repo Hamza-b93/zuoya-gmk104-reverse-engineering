@@ -15,6 +15,12 @@ _Last updated: 2026-11-26._
   reset). Codec offline-tested (`test-macros.js`). **Unverified on hardware** —
   the stock VIA-emulation firmware may not implement the macro commands; the read
   path reports "no macro support" gracefully if so.
+- **Kanata config generator (Phase 1)** — ✅ built: a **Kanata** tab + `src/kanata.js`
+  generate a `.kbd` from the physical layout + current keymap (HID→Kanata names,
+  aligned `defsrc`/`deflayer base` + scaffold), with edit + save and a
+  `kanata`/`/dev/uinput` detector. Generator offline-tested (`test-kanata.js`).
+  Follow-ups: Phase 2 process management (start/stop kanata from the app),
+  Phase 3 permissions doctor, Phase 4 live layer → screen widget via kanata's TCP port.
 - **CS2 screen provider + Now Playing widget** — ✅ built: CS2 live stats via GSI
   (shared `src/providers/gsi-server.js` + `src/providers/cs2.js`, `--game cs2`),
   and a **Now Playing** widget (`src/providers/nowplaying.js`) showing the running
@@ -78,9 +84,9 @@ Related:
       appears without clicking **Detect**, with a live wired/2.4G mode indicator.
 - [ ] **Keycode picker search** — filter the palette; the full VIA code space is big.
 - [ ] **"Reset keymap to default"** — reflash the stock layout from the VIA JSON.
-- [ ] **Kanata config generator** — host-side advanced remapping is the documented
-      power path ([docs/02](docs/02-linux-setup.md)); let the app emit/apply a Kanata
-      config so layers/combos/tap-hold work beyond what the firmware allows.
+- [ ] **Kanata — beyond Phase 1** (generator shipped): Phase 2 start/stop kanata
+      from the app with a live log; Phase 3 permissions doctor (udev/uinput setup);
+      Phase 4 stream the active kanata layer to the screen via its TCP port.
 
 ## Quality & infra
 - [ ] **Aggregate `npm test` + CI test workflow** — there's only `release.yml`; run the

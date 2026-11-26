@@ -16,6 +16,7 @@
       <button class="tab active" data-view="device">Device &amp; Screen</button>
       <button class="tab" data-view="keymap">Keymap</button>
       <button class="tab" data-view="macros">Macros</button>
+      <button class="tab" data-view="kanata">Kanata</button>
       <button class="tab" data-view="lighting">Lighting</button>
       <button class="tab" data-view="profiles">Profiles</button>
       <button class="tab" data-view="widgets">Screen widgets</button>
@@ -122,6 +123,26 @@
               <button id="btn-macro-write">Write to keyboard</button>
               <button id="btn-macro-reset" class="ghost danger">Reset all macros</button>
             </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============ KANATA ============ -->
+      <div id="view-kanata" class="view">
+        <section class="card">
+          <div class="card-head">
+            <h2>Kanata config</h2>
+            <div class="controls">
+              <button id="btn-kanata-detect" class="ghost">Detect</button>
+              <button id="btn-kanata-generate">Generate from keyboard</button>
+            </div>
+          </div>
+          <div id="kanata-status" class="status">Generate a <code>.kbd</code> config from your current layout — host-side remapping (layers, combos, tap-hold) with no flashing. Needs the <code>kanata</code> binary to run.</div>
+          <div id="kanata-detect" class="kanata-detect"></div>
+          <textarea id="kanata-config" class="kanata-config" spellcheck="false" placeholder="Click “Generate from keyboard” to build a starting config from your current keymap…"></textarea>
+          <div class="kanata-actions">
+            <button id="btn-kanata-save" disabled>Save .kbd…</button>
+            <span class="muted">Then run it yourself: <code>kanata --cfg your-file.kbd</code></span>
           </div>
         </section>
       </div>

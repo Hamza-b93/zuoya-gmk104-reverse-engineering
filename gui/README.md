@@ -37,6 +37,7 @@ app registry-driven so it supports boards beyond the GMK104 (see "Next" at the b
 | Diagnostics dump (`doctor.js`) + keyboard registry (`src/registry.js`) | ✅ `npm run doctor` writes a redacted report for issue-based board support. |
 | RGB lighting (`src/lighting.js`, `set-light.js`) | ✅ **Lighting** tab + CLI: effect/brightness/speed/hue/sat over VIA custom channel 3, live sliders, read-back + save-to-flash. Codec tested offline (`npm run test:lighting`). Not yet exercised on hardware. |
 | Profiles (`src/profiles.js`) | ✅ **Profiles** tab: snapshot the full keymap (all layers) + lighting to portable JSON, re-apply in one click, import/export. Capture/apply tested offline (`npm run test:profiles`). |
+| Kanata config generator (`src/kanata.js`) | ✅ **Kanata** tab: generate a `.kbd` from the physical layout + current keymap (HID → Kanata names, aligned `defsrc`/`deflayer base` + scaffold), edit, and save. Detects the `kanata` binary + `/dev/uinput` access. Generator tested offline (`npm run test:kanata`). Running kanata (process management) is a follow-up. |
 | Packaging (AppImage / Snap / Flatpak) | ✅ electron-builder config + CI release workflow. AppImage build verified; Snap/Flatpak via CI. |
 | Live game stats on the screen (Dota 2 · CS2) | ✅ pipeline built + offline-verified (GSI listen → parse → render → codec frame) for both games via a shared GSI server. Device streaming not yet run on hardware. `npm run game -- --game cs2`. |
 | Now playing widget (Steam / Lutris logo) | ✅ detects the running game and shows its **logo** (`src/providers/nowplaying.js`); Steam via `/proc` + `registry.vdf` + local library-cache art, Lutris best-effort. All local, no web API. Parsers tested offline (`npm run test:nowplaying`). |
@@ -55,6 +56,7 @@ gui/
 │   ├── device.js     # enumerate GMK104 hidraw interfaces, open by usage page
 │   ├── via.js        # VIA codec: protocol version, layer count, get/set keymap + macro buffer
 │   ├── macros.js     # VIA dynamic-macro codec (byte format <-> editable step list)
+│   ├── kanata.js     # generate a Kanata .kbd config from layout + keymap (host-side remap)
 │   ├── lighting.js   # VIA custom-channel RGB codec (effect/brightness/speed/color)
 │   ├── profiles.js   # capture/apply a keymap + lighting snapshot (portable JSON)
 │   ├── keycodes.js   # keycode <-> label map + grouped picker palette
@@ -93,7 +95,7 @@ npm install
 npm start        # launches the Electron window
 ```
 
-Six tabs:
+Seven tabs:
 - **Device & Screen** — **Detect** (lists the hidraw interfaces by usage page) and a **Screen**
   uploader: drag an image onto the card (or **Choose image…**), see a 180×180 preview of exactly
   what the panel will show (updates live with the **Fit** toggle: cover/crop or contain/letterbox),
@@ -105,6 +107,11 @@ Six tabs:
   sequence of steps (type literal **Text**, **Tap** / **Hold** / **Release** a key, or wait a
   **Delay** in ms), watch the byte budget, then **Write to keyboard**. **Reset all** clears them.
   (If the stock firmware doesn't implement the macro commands, the tab says so.)
+- **Kanata** — generate a [Kanata](https://github.com/jtroo/kanata) `.kbd` config from your physical
+  layout + current keymap (an aligned `defsrc`/`deflayer base` plus scaffolding for layers, combos
+  and tap-hold). **Detect** reports whether the `kanata` binary and `/dev/uinput` access are present.
+  Edit the config and **Save .kbd…**, then run it yourself: `kanata --cfg your-file.kbd`. This is
+  host-side remapping — no flashing, works wired or 2.4G, X11 or Wayland.
 - **Lighting** — global RGB over VIA custom channel 3: live sliders for effect index, brightness,
   speed, hue and saturation (with a color-preview swatch). **Read from keyboard** loads the current
   values; changes apply live; **Save to keyboard** persists them to flash. Also headless via

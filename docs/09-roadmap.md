@@ -20,6 +20,11 @@ hardware feature stays intact. This is the host-side "compatibility layer."
 ### Features
 1. **Key remapping** — read/write the keymap, layers, and macros via the **VIA protocol**
    (usage page `0xFF60`, `/dev/hidrawX` = interface 1). The repo's VIA JSON defines the matrix/layout.
+   ✅ **Kanata config generator** added — a **Kanata** tab + `src/kanata.js` turns the physical
+   layout + current keymap into a host-side Kanata `.kbd` (aligned `defsrc`/`deflayer base` +
+   scaffold; detects the `kanata` binary and `/dev/uinput`). Generator offline-tested
+   (`test-kanata.js`); running kanata (process management) is a follow-up. This is the no-flash path
+   to layers/combos/tap-hold the stock firmware can't do.
 2. **Screen upload** — drag-drop an image/GIF, preview at **180×180**, push it using the
    protocol in [08-screen-protocol.md](08-screen-protocol.md) (`0xFF1C`, interface 3). The device write
    path and orientation are verified; image decoding is still to do.

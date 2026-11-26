@@ -18,6 +18,10 @@ contextBridge.exposeInMainWorld('zuoya', {
   macrosRead: () => ipcRenderer.invoke('macros:read'),
   macrosWrite: (macros) => ipcRenderer.invoke('macros:write', { macros }),
   macrosReset: () => ipcRenderer.invoke('macros:reset'),
+  // Kanata (host-side remapping config)
+  kanataGenerate: () => ipcRenderer.invoke('kanata:generate'),
+  kanataDetect: () => ipcRenderer.invoke('kanata:detect'),
+  kanataSave: (config) => ipcRenderer.invoke('kanata:save', { config }),
   // RGB lighting (global effect/brightness/speed/color)
   lightingRead: () => ipcRenderer.invoke('lighting:read'),
   lightingSet: (patch) => ipcRenderer.invoke('lighting:set', patch),

@@ -3,8 +3,11 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFileSync, accessSync, constants as fsConstants } from 'node:fs';
 import { mkdir, readdir, readFile, writeFile, unlink, copyFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+const execFileP = promisify(execFile);
 
 import { describe } from './src/device.js';
 import {
@@ -14,6 +17,7 @@ import {
 } from './src/via.js';
 import { decodeMacros, encodeMacros, macrosByteLength } from './src/macros.js';
 import { getLighting, setLighting, saveLighting, withLighting } from './src/lighting.js';
+import { generateKanataConfig } from './src/kanata.js';
 import { captureProfile, applyProfile, slugify } from './src/profiles.js';
 import { keycodeName, KEYCODE_GROUPS } from './src/keycodes.js';
 import { buildLayout, keyOffset } from './src/layout.js';
@@ -284,6 +288,40 @@ handle('profiles:import', async () => {
   const file = `${slugify(parsed.name ?? basename(filePaths[0], '.json'))}.json`;
   await writeFile(join(dir, file), JSON.stringify(parsed, null, 2));
   return { canceled: false, file, profiles: await listProfiles() };
+});
+
+// --- Kanata (host-side remapping) ---
+// Generate a .kbd config from the physical layout + the current layer-0 keymap.
+handle('kanata:generate', () => {
+  const { rows, cols, keys, name } = getLayout();
+  const codes = withVia((dev) => decodeKeycodes(readKeymapBuffer(dev, rows * cols * 2)));
+  const keyList = keys.map((k) => ({ x: k.x, y: k.y, row: k.row, col: k.col, code: codes[k.row * cols + k.col] ?? 0 }));
+  return generateKanataConfig(keyList, { name });
+});
+
+// Is kanata installed, and can we reach /dev/uinput? (Read-only check.)
+handle('kanata:detect', async () => {
+  let installed = false, version = null;
+  try {
+    const { stdout } = await execFileP('kanata', ['--version'], { timeout: 4000 });
+    installed = true;
+    version = stdout.trim().split('\n')[0];
+  } catch { /* not on PATH */ }
+  let uinput = false;
+  try { accessSync('/dev/uinput', fsConstants.W_OK); uinput = true; } catch { /* no access */ }
+  return { installed, version, uinput };
+});
+
+// Write the generated config to a user-chosen .kbd file.
+handle('kanata:save', async ({ config }) => {
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    title: 'Save Kanata config',
+    defaultPath: 'zuoya-gmk104.kbd',
+    filters: [{ name: 'Kanata config', extensions: ['kbd'] }],
+  });
+  if (canceled || !filePath) return { canceled: true };
+  await writeFile(filePath, config);
+  return { canceled: false, path: filePath };
 });
 
 // --- Screen widgets (live content) ---

@@ -157,6 +157,23 @@ button:disabled { opacity: 0.55; cursor: progress; }
 #macro-budget { font-family: ui-monospace, monospace; font-size: 12.5px; }
 #macro-budget.err { color: var(--err); }
 
+/* ---------- kanata ---------- */
+.kanata-detect {
+  font-family: ui-monospace, monospace; font-size: 12.5px; margin: 10px 0;
+  padding: 8px 12px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--border);
+}
+.kanata-detect:empty { display: none; }
+.kanata-detect.ok { color: var(--ok); }
+.kanata-detect.warn { color: #f0a63c; }
+.kanata-config {
+  width: 100%; height: 320px; resize: vertical; margin-top: 4px;
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; box-sizing: border-box;
+  font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.5; white-space: pre;
+}
+.kanata-config:focus { outline: none; border-color: var(--accent); }
+.kanata-actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+
 /* ---------- lighting ---------- */
 .light-grid { display: flex; gap: 24px; align-items: flex-start; margin-top: 14px; }
 .light-controls { display: grid; gap: 14px; flex: 1 1 auto; max-width: 460px; }
